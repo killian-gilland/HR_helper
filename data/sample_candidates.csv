@@ -1,0 +1,11 @@
+nom,email,années_exp,compétences,disponibilité
+Alice Durand,alice.durand@email.com,5,Python;SQL;Data Analysis;Project Management,Immédiat
+Bob Laurent,bob.laurent@email.com,2,JavaScript;React;Node.js;Communication,2024-02-15
+Claire Moreau,claire.moreau@email.com,8,Python;SQL;Machine Learning;Leadership,Immédiat
+David Chen,david.chen@email.com,3,Java;Spring;Microservices;Problem Solving,2024-02-20
+Emma Wilson,emma.wilson@email.com,6,Python;FastAPI;PostgreSQL;AWS,Immédiat
+Frank Müller,frank.muller@email.com,1,Python;JavaScript;Git,2024-03-01
+Grace Lee,grace.lee@email.com,9,Python;SQL;Business Analysis;Project Management,Immédiat
+Henry Brown,henry.brown@email.com,4,React;TypeScript;CSS;Communication,2024-02-25
+Iris Kamara,iris.kamara@email.com,7,SQL;Data Warehouse;ETL;Leadership,Immédiat
+Jack Robinson,jack.robinson@email.com,2,Python;Flask;MySQL;Communication,2024-02-18

@@ -1,0 +1,112 @@
+
+
+        <html>
+            <head>
+                <style>
+                    body { font-family: 'Segoe UI', Arial, sans-serif; line-height: 1.6; color: #333; background-color: #f4f4f4; padding: 20px; }
+                    .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+                    .header { border-bottom: 2px solid #2c3e50; padding-bottom: 20px; margin-bottom: 20px; }
+                    .header h1 { margin: 0; color: #2c3e50; font-size: 24px; }
+                    .timestamp { color: #7f8c8d; font-size: 14px; margin-top: 5px; }
+                    
+                    .section-title { background-color: #3498db; color: white; padding: 10px 15px; border-radius: 4px; margin-top: 30px; font-weight: bold; }
+                    
+                    .insights-box { background-color: #f8f9fa; border-left: 5px solid #3498db; padding: 20px; margin: 20px 0; white-space: pre-line; }
+                    
+                    .metrics-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin: 20px 0; }
+                    .metric-card { background: #fff; border: 1px solid #e0e0e0; padding: 15px; text-align: center; border-radius: 6px; }
+                    .metric-val { font-size: 24px; font-weight: bold; color: #2c3e50; }
+                    .metric-lbl { font-size: 12px; color: #7f8c8d; text-transform: uppercase; margin-top: 5px; }
+                    
+                    .candidate-card { border: 1px solid #eee; padding: 15px; margin-bottom: 10px; border-radius: 6px; transition: transform 0.2s; }
+                    .candidate-card:hover { background-color: #fafafa; border-color: #ccc; }
+                    .cand-name { font-size: 18px; font-weight: bold; color: #2980b9; }
+                    .cand-meta { font-size: 14px; color: #555; margin-top: 5px; }
+                    
+                    .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 11px; color: white; vertical-align: middle; margin-left: 10px; }
+                    .badge-EXCELLENT { background-color: #27ae60; }
+                    .badge-GOOD { background-color: #2980b9; }
+                    .badge-AVERAGE { background-color: #f39c12; }
+                    .badge-WEAK { background-color: #c0392b; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <div class="header">
+                        <h1>🎯 Recruitment Intelligence Report</h1>
+                        <div class="timestamp">Generated via G-Sheet Analyst • 2026-01-12 19:05</div>
+                    </div>
+                    
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-val">100</div>
+                            <div class="metric-lbl">Total Profiles</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-val">40</div>
+                            <div class="metric-lbl">Available Now</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-val">19%</div>
+                            <div class="metric-lbl">Avg Match</div>
+                        </div>
+                    </div>
+
+                    <div class="section-title">🧠 AI Executive Summary</div>
+                    <div class="insights-box">1.  🎯 TOP TALENTS<br>    *   Chloé Michel: Immediately available (0 days), strong experience (11.0 years), and a good skill match (67%). Prioritize for immediate engagement to assess the criticality of the missing skill.<br>    *   Marc Simon: Only candidate with a 100% skill match (3/3: Python, SQL, AWS) across the entire pool. Experience of 4.0 years is solid, though availability is 30 days.<br>    *   Fatima David: Highly experienced (13.0 years) with a 67% skill match. Availability is 30 days.<br><br>2.  ⚠️ CRITICAL GAPS<br>    *   No "EXCELLENT" Tier Candidates: The pool lacks any top-tier candidates, with 0% classified as "EXCELLENT".<br>    *   Low Skill Match: Only 1 out of 100 candidates (Marc Simon) possesses 100% of the required skills (Python, SQL, AWS). The average skill match across the entire pool is critically low at 19%.<br>    *   Missing AWS Skill: Among the top 5 candidates, 4 out of 5 only have a 67% skill match. This strongly suggests a widespread deficit in one specific skill, likely AWS, given Python and SQL are common pairings.<br><br>3.  📊 POOL HEALTH<br>    *   Weak Overall: The candidate pool is significantly weak, with 75% of candidates classified as "WEAK" and only 3% (3 candidates) as "GOOD".<br>    *   Limited High-Quality Options: Despite 40% of candidates being immediately available, their average skill match is likely low, as indicated by the overall average skill match of 19%.<br><br>4.  👉 NEXT ACTIONS<br>    *   Immediate Outreach:<br>        *   Engage Chloé Michel immediately. Confirm the specific missing skill and assess if it can be trained on the job or if a foundational understanding exists.<br>        *   Contact Marc Simon and Fatima David promptly to initiate the interview process.<br>    *   Critical Skill Assessment: Clarify the absolute non-negotiable skills among Python, SQL, and AWS. If a 67% match is acceptable for strong candidates, prioritize candidates like Chloé and Fatima.<br>    *   Aggressive Sourcing Strategy: Given the severe lack of fully qualified and top-tier candidates:<br>        *   Targeted Search: Focus sourcing efforts specifically on candidates with proven AWS experience, as this appears to be the primary skill gap.<br>        *   Expanded Channels: Utilize professional networks, specialized job boards, and passive candidate sourcing techniques to attract higher-caliber talent.<br>        *   Job Description Review: Re-evaluate the job description to ensure it accurately reflects minimum requirements versus desired skills, potentially broadening the viable candidate pool if certain skills can be developed post-hire.</div>
+                    
+                    <div class="section-title">⭐ Top Recommended Candidates</div>
+                    
+            <div class="candidate-card">
+                <div class="cand-name">
+                    Marc Simon
+                    <span class="badge badge-GOOD">GOOD</span>
+                </div>
+                <div class="cand-meta">
+                    📧 marc.simon@fake.db | 
+                    💼 4 years exp | 
+                    ✅ Match: 100%
+                </div>
+                <div class="cand-meta" style="color: #e67e22; margin-top: 4px;">
+                    ⏰ Availability: 30 days
+                </div>
+            </div>
+            
+            <div class="candidate-card">
+                <div class="cand-name">
+                    Fatima David
+                    <span class="badge badge-GOOD">GOOD</span>
+                </div>
+                <div class="cand-meta">
+                    📧 fatima.david@fake.db | 
+                    💼 13 years exp | 
+                    ✅ Match: 67%
+                </div>
+                <div class="cand-meta" style="color: #e67e22; margin-top: 4px;">
+                    ⏰ Availability: 30 days
+                </div>
+            </div>
+            
+            <div class="candidate-card">
+                <div class="cand-name">
+                    Chloé Michel
+                    <span class="badge badge-GOOD">GOOD</span>
+                </div>
+                <div class="cand-meta">
+                    📧 chloé.michel@fake.db | 
+                    💼 11 years exp | 
+                    ✅ Match: 67%
+                </div>
+                <div class="cand-meta" style="color: #e67e22; margin-top: 4px;">
+                    ⏰ Availability: 0 days
+                </div>
+            </div>
+            
+                    
+                    <div style="text-align: center; margin-top: 40px; color: #aaa; font-size: 12px;">
+                        Automated Report • Powered by Gemini/Claude
+                    </div>
+                </div>
+            </body>
+        </html>
+        

@@ -1,0 +1,12 @@
+runtime: python311
+
+env: standard
+entrypoint: gunicorn -b :$PORT src.cloud_function:recruitment_analyzer
+
+env_variables:
+  GCP_PROJECT_ID: "your-project-id"
+  LLM_PROVIDER: "anthropic"
+
+secret_environment_variables:
+  ANTHROPIC_API_KEY: projects/YOUR_PROJECT_ID/secrets/anthropic-api-key/latest
+  EMAIL_PASSWORD: projects/YOUR_PROJECT_ID/secrets/email-password/latest

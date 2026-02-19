@@ -1,0 +1,23 @@
+{
+  "gsheet_url": "https://docs.google.com/spreadsheets/d/YOUR_SHEET_ID/edit",
+  "worksheet_name": "Candidats",
+  "llm_provider": "anthropic",
+  "required_skills": [
+    "python",
+    "sql",
+    "data analysis",
+    "project management",
+    "communication",
+    "problem solving"
+  ],
+  "email_config": {
+    "sender_email": "recruitment@yourdomain.com",
+    "recipients": ["hr-manager@yourdomain.com"],
+    "send_on_schedule": true
+  },
+  "cloud_scheduler": {
+    "schedule": "0 9 * * MON",
+    "timezone": "Europe/Paris",
+    "description": "Weekly recruitment analysis every Monday at 9 AM"
+  }
+}
