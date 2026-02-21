@@ -1,5 +1,6 @@
 """
-LLM Analysis Module - SMART LOCAL (Llama3 + LLaVA)
+LLM Analysis Module - SMART LOCAL (Llama3.2 + LLaVA)
+Version Optimisée pour la vitesse (CPU-friendly)
 """
 
 import json
@@ -18,12 +19,12 @@ class ResponseWrapper:
 class LLMAnalyzer:
     def __init__(self):
         self.api_url = "http://localhost:11434/api/generate"
-        # On définit deux modèles selon le besoin
         self.vision_model = "llava"   # Pour les images
-        self.text_model = "llama3"    # Pour le texte (Beaucoup plus intelligent)
+        # ⚡ CHANGEMENT MAJEUR : llama3.2 (3B) est 3x plus rapide que llama3 (8B)
+        self.text_model = "llama3.2"  
 
     def generate_content(self, inputs):
-        """Aiguillage intelligent : Texte -> Llama3, Image -> LLaVA"""
+        """Aiguillage intelligent : Texte -> Llama3.2, Image -> LLaVA"""
         prompt = ""
         images = []
         has_image = False
@@ -42,24 +43,25 @@ class LLMAnalyzer:
             prompt = inputs
 
         # 2. Choix du modèle
-        # Si on a une image, on est obligé d'utiliser LLaVA
-        # Si c'est juste du texte (PDF), on utilise Llama3 (Bien meilleur)
         selected_model = self.vision_model if has_image else self.text_model
 
-        # 3. Configuration de la requête
+        # 3. Configuration de la requête (Optimisée pour la vitesse)
         payload = {
             "model": selected_model,
             "prompt": prompt,
             "stream": False,
             "format": "json",
+            "keep_alive": "1h", # ⚡ Garde le modèle en mémoire (évite le rechargement lent)
             "images": images,
             "options": {
-                "temperature": 0.0, # Zéro créativité
-                "num_ctx": 4096
+                "temperature": 0.0,
+                "num_ctx": 4096,
+                "num_predict": 1000 # ⚡ Coupe l'IA si elle parle trop (gain de temps)
             }
         }
 
         try:
+            # On laisse un timeout large au cas où le premier chargement soit long
             response = requests.post(self.api_url, json=payload, timeout=300) 
             
             if response.status_code == 200:
@@ -76,8 +78,8 @@ class LLMAnalyzer:
         try:
             buf = BytesIO()
             if image.mode in ("RGBA", "P"): image = image.convert("RGB")
-            # On augmente la qualité pour aider LLaVA à lire
-            image.save(buf, format="PNG") 
+            # Qualité réduite légèrement pour accélérer le traitement visuel
+            image.save(buf, format="JPEG", quality=85) 
             return base64.b64encode(buf.getvalue()).decode('utf-8')
         except:
             return None
