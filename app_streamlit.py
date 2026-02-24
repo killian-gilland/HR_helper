@@ -1,6 +1,6 @@
 """
 Recruitment Analyst - ÉDITION DASHBOARD ENTERPRISE
-Correction du bouton d'upload, ajout de la règle "Anti-Bisounours" pour les hors-sujets, et radars cliquables.
+Architecture Modulaire (src/modules/), UI/UX SaaS B2B, et Scoring Strict.
 """
 import streamlit as st
 import pandas as pd
@@ -55,14 +55,12 @@ st.markdown("""
         border-radius: 8px !important;
         padding: 1rem !important;
     }
-    /* Les textes "Drag and drop" */
     [data-testid="stFileUploader"] div, [data-testid="stFileUploader"] small {
         color: #94A3B8 !important;
     }
-    /* Le fameux bouton "Browse Files" */
     [data-testid="stFileUploader"] button {
         background-color: #3B82F6 !important;
-        color: #FFFFFF !important; /* Blanc forcé */
+        color: #FFFFFF !important;
         border: none !important;
         border-radius: 6px !important;
         font-weight: 600 !important;
@@ -133,14 +131,16 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+# --- IMPORTS PROPRES (Architecture Modulaire) ---
 current_dir = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, current_dir)
+if current_dir not in sys.path:
+    sys.path.insert(0, current_dir)
 
 try:
     from src.modules.llm_analyzer import create_analyzer
     from src.modules.pdf_utils import extract_text_from_pdf
-except ImportError:
-    st.error("Erreur d'import. Vérifiez vos dossiers.")
+except ImportError as e:
+    st.error(f"Erreur d'import : {e}. Assurez-vous que les dossiers 'src' et 'modules' contiennent bien des fichiers __init__.py")
     st.stop()
 
 logging.basicConfig(level=logging.INFO)
@@ -354,7 +354,7 @@ elif launch_btn:
                 
                 st.markdown("</div>", unsafe_allow_html=True) 
 
-        # --- RUNNER UPS (AVEC GRAPHIQUES CLIQUABLES) ---
+        # --- RUNNER UPS ---
         if len(results) > 1:
             st.markdown("<br><h4 style='color: #0F172A; margin-bottom: 1rem; padding-left: 1rem;'>📋 Autres Profils Analysés</h4>", unsafe_allow_html=True)
             
@@ -362,7 +362,6 @@ elif launch_btn:
                 score = res.get('score_final', 0)
                 color = "#10B981" if score >= 60 else ("#F59E0B" if score >= 40 else "#EF4444")
                 
-                # Le header de la carte
                 st.markdown(f"""
                 <div class='dash-card' style='margin: 0 1rem 0px 1rem; display: flex; align-items: center; padding: 15px 20px; border-bottom: none; border-bottom-left-radius: 0; border-bottom-right-radius: 0;'>
                     <div style='background: {color}; color: white; border-radius: 8px; font-weight: 800; font-size: 1.2rem; padding: 8px 12px; margin-right: 20px; min-width: 60px; text-align: center;'>
@@ -375,7 +374,6 @@ elif launch_btn:
                 </div>
                 """, unsafe_allow_html=True)
                 
-                # Le menu déroulant cliquable (Expander) accroché juste en dessous
                 with st.container():
                     st.markdown("<div style='padding: 0 1rem;'>", unsafe_allow_html=True)
                     with st.expander("📊 Voir l'analyse détaillée et le graphique"):
