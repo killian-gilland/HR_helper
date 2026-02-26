@@ -40,11 +40,16 @@ st.markdown("""
         color: #F8FAFC !important;
     }
     
-    .stTextArea textarea {
-        background-color: #1E293B !important;
-        border: 1px solid #334155 !important;
+    /* --- FIX DE LA ZONE DE TEXTE (OFFRE D'EMPLOI) --- */
+    div[data-baseweb="textarea"] > textarea {
+        background-color: #F8FAFC !important;
+        color: #0F172A !important;
+        border: 1px solid #CBD5E1 !important;
         border-radius: 8px !important;
-        color: white !important;
+    }
+    div[data-baseweb="textarea"] > textarea:focus {
+        border-color: #3B82F6 !important;
+        box-shadow: 0 0 0 1px #3B82F6 !important;
     }
     .stTextArea label { display: none !important; }
 
@@ -149,40 +154,46 @@ logging.basicConfig(level=logging.INFO)
 def _process_cv_one_shot(text_content, job_desc) -> dict:
     llm = create_analyzer()
     prompt = f"""
-    Tu es un Directeur du Recrutement Expert, réputé pour ta SÉVÉRITÉ EXTRÊME. 
-    TACHE : Lis ce CV UNE SEULE FOIS, extrais les infos clés ET évalue le candidat par rapport à l'offre.
+    Tu es un Directeur Technique et Recruteur IMPITOYABLE. 
+    TACHE : Évalue l'adéquation technique exacte entre ce CV et cette offre.
     
     JOB DESCRIPTION: {job_desc[:1500]}
     TEXTE DU CV : {text_content[:6000]}
     
-    RÈGLES D'EXTRACTION :
-    - 'années_exp' : Calcule le nombre total d'années d'expérience.
+    RÈGLES DE SCORING (BARÈME MATHÉMATIQUE STRICT) :
+    🚨 RÈGLE DE SURVIE : Si l'expérience du candidat n'a RIEN A VOIR avec le métier de l'offre (ex: un commercial qui postule comme Data Scientist), le score 'n_hard_skills_coeur' DOIT ÊTRE DE 0/65.
     
-    RÈGLES DE SCORING (BARÈME IMPITOYABLE SUR 100) :
-    🚨 RÈGLE DE SURVIE : Si le candidat n'a JAMAIS travaillé dans le métier exact de l'offre (ex: un vendeur ou commercial qui postule à une offre de Data Scientist), tu DOIS IMPÉRATIVEMENT mettre 0/65 en 'n_hard_skills_coeur'. C'est éliminatoire. Ne sois pas gentil.
-    
-    - 'n_hard_skills_coeur' (Sur 65) : 
-        * 60-65 (Génie absolu de la stack, rarissime).
-        * 45-59 (Excellent profil, coche toutes les cases techniques).
-        * 30-44 (Intermédiaire, a de bonnes bases mais des lacunes).
-        * 0-29 (Débutant ou profil 100% Hors-Sujet).
-    - 'n_outils_metier' (Sur 10) : Ne donne jamais 10/10.
-    - 'n_business_impact' (Sur 10) : 0 s'il n'y a AUCUNE métrique chiffrée.
-    - 'n_seniorite' (Sur 5) : 5 uniquement si les années matchent.
-    - 'n_soft_skills' (Sur 5) : 3 ou 4 au maximum.
-    - 'n_storytelling' (Sur 5) : 3 ou 4 au maximum.
+    - 'n_hard_skills_coeur' (Sur 65) : Calcule la note ainsi :
+        * 55-65 : Le candidat maîtrise 100% des technologies clés de l'offre avec des années de pratique prouvées.
+        * 35-54 : Le candidat maîtrise certaines technos, mais il lui manque au moins une compétence technique CRUCIALE demandée dans l'offre.
+        * 15-34 : Connaissances théoriques, profil junior, ou ne possède que 20% de la stack technique demandée.
+        * 0-14 : Débutant total ou profil hors sujet.
+        
+    - 'n_outils_metier' (Sur 10) : 1 point par outil de l'offre réellement écrit sur le CV.
+    - 'n_business_impact' (Sur 10) : 0/10 direct s'il n'y a AUCUNE métrique chiffrée (euros, pourcentages) dans ses expériences.
+    - 'n_seniorite' (Sur 5) : 5 uniquement si le nombre d'années d'expérience requis est atteint.
+    - 'n_soft_skills' (Sur 5) : Ne mets jamais plus de 3.
+    - 'n_storytelling' (Sur 5) : Ne mets jamais plus de 3.
     
     OUTPUT JSON STRICT : 
+    IMPORTANT : Tu dois obligatoirement remplir la clé "analyse_preliminaire" EN PREMIER pour justifier tes futurs scores en listant ce qu'il MANQUE au candidat.
     {{ 
+        "analyse_preliminaire": "Le candidat maîtrise X et Y, mais il ne mentionne absolument pas Z qui est requis. Son impact business n'est pas chiffré. Le score technique sera donc moyen/faible.",
         "nom": "Prénom Nom",
-        "titre_profil": "Titre",
-        "email": "email",
+        "titre_profil": "Titre du profil sur le CV",
+        "email": "email@trouvé_ou_vide",
         "années_exp": 0,
         "compétences": ["C1", "C2"],
         "réalisations_clés": ["Action 1", "Action 2"],
-        "n_hard_skills_coeur": 0, "n_outils_metier": 0, "n_business_impact": 0,
-        "n_seniorite": 0, "n_soft_skills": 0, "n_storytelling": 0,
-        "strength": "Atout majeur prouvé", "risk": "Lacune métier précise", "reasoning": "Analyse ultra-courte" 
+        "n_hard_skills_coeur": 0, 
+        "n_outils_metier": 0, 
+        "n_business_impact": 0,
+        "n_seniorite": 0, 
+        "n_soft_skills": 0, 
+        "n_storytelling": 0,
+        "strength": "Atout majeur prouvé", 
+        "risk": "Lacune technique ou métier précise", 
+        "reasoning": "Conclusion ultra-courte" 
     }}
     """
     try:
@@ -345,7 +356,8 @@ elif launch_btn:
                     st.markdown("</div>", unsafe_allow_html=True)
                 
                 with spot_col3:
-                    st.plotly_chart(create_radar_chart(top_cand), use_container_width=True, config={'displayModeBar': False})
+                    # FIX: Ajout de la clé unique pour le graphique Spotlight
+                    st.plotly_chart(create_radar_chart(top_cand), use_container_width=True, config={'displayModeBar': False}, key="radar_top")
                 
                 st.markdown("<hr style='border-color: #E2E8F0; margin: 15px 0;'>", unsafe_allow_html=True)
                 st.markdown(f"**Synthèse IA :** {top_cand.get('reasoning', '')}")
@@ -358,7 +370,8 @@ elif launch_btn:
         if len(results) > 1:
             st.markdown("<br><h4 style='color: #0F172A; margin-bottom: 1rem; padding-left: 1rem;'>📋 Autres Profils Analysés</h4>", unsafe_allow_html=True)
             
-            for res in results[1:]:
+            # FIX: Ajout de enumerate pour générer un ID unique par graphique
+            for idx, res in enumerate(results[1:]):
                 score = res.get('score_final', 0)
                 color = "#10B981" if score >= 60 else ("#F59E0B" if score >= 40 else "#EF4444")
                 
@@ -380,7 +393,8 @@ elif launch_btn:
                         col_r1, col_r2 = st.columns([1, 1.5])
                         
                         with col_r1:
-                            st.plotly_chart(create_radar_chart(res), use_container_width=True, config={'displayModeBar': False})
+                            # FIX: Ajout de la clé unique basée sur l'index de la boucle
+                            st.plotly_chart(create_radar_chart(res), use_container_width=True, config={'displayModeBar': False}, key=f"radar_runner_{idx}")
                         
                         with col_r2:
                             st.markdown(f"**Synthèse :** {res.get('reasoning', '')}")
