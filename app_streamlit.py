@@ -1,6 +1,6 @@
 """
 Recruitment Analyst - ÉDITION DASHBOARD ENTERPRISE
-Architecture Modulaire (src/modules/), UI/UX SaaS B2B, et Scoring Strict.
+Architecture Modulaire (src/modules/), UI/UX SaaS B2B, et Scoring Strict mais Nuancé.
 """
 import streamlit as st
 import pandas as pd
@@ -40,29 +40,39 @@ st.markdown("""
         color: #F8FAFC !important;
     }
     
-    /* --- FIX DE LA ZONE DE TEXTE (OFFRE D'EMPLOI) --- */
-    div[data-baseweb="textarea"] > textarea {
-        background-color: #F8FAFC !important;
-        color: #0F172A !important;
-        border: 1px solid #CBD5E1 !important;
+    /* =========================================
+       🧨 CORRECTIF NUCLÉAIRE 1 : L'OFFRE D'EMPLOI
+       ========================================= */
+    [data-testid="stSidebar"] .stTextArea textarea {
+        background-color: #1E293B !important;
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+        border: 1px solid #475569 !important;
         border-radius: 8px !important;
     }
-    div[data-baseweb="textarea"] > textarea:focus {
+    [data-testid="stSidebar"] .stTextArea textarea:focus {
         border-color: #3B82F6 !important;
         box-shadow: 0 0 0 1px #3B82F6 !important;
     }
-    .stTextArea label { display: none !important; }
+    [data-testid="stSidebar"] .stTextArea label { display: none !important; }
 
-    /* --- FIX DU FILE UPLOADER (Contraste forcé) --- */
-    [data-testid="stFileUploader"] {
+    /* =========================================
+       🧨 CORRECTIF NUCLÉAIRE 2 : LA ZONE DE DÉPÔT CV
+       ========================================= */
+    [data-testid="stFileUploadDropzone"] {
         background-color: #0F172A !important;
-        border: 1px dashed #475569 !important;
+        border: 2px dashed #475569 !important;
         border-radius: 8px !important;
-        padding: 1rem !important;
     }
-    [data-testid="stFileUploader"] div, [data-testid="stFileUploader"] small {
-        color: #94A3B8 !important;
+    [data-testid="stFileUploadDropzone"] *, 
+    [data-testid="stFileUploadDropzone"] span, 
+    [data-testid="stFileUploadDropzone"] small, 
+    [data-testid="stFileUploadDropzone"] svg {
+        color: #F8FAFC !important;
+        -webkit-text-fill-color: #F8FAFC !important;
+        fill: #F8FAFC !important;
     }
+    
     [data-testid="stFileUploader"] button {
         background-color: #3B82F6 !important;
         color: #FFFFFF !important;
@@ -72,13 +82,13 @@ st.markdown("""
     }
     [data-testid="stFileUploader"] button:hover {
         background-color: #2563EB !important;
-        color: #FFFFFF !important;
     }
     
     /* Bouton Principal de Scan */
     .stButton > button {
         background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
         color: white !important;
+        -webkit-text-fill-color: white !important;
         border-radius: 6px !important;
         font-weight: 700 !important;
         border: 1px solid #1E40AF !important;
@@ -88,7 +98,6 @@ st.markdown("""
         letter-spacing: 0.5px;
         transition: transform 0.2s;
     }
-    .stButton > button:hover { transform: translateY(-2px); }
     
     /* --- MAIN DASHBOARD CARDS --- */
     .dash-card {
@@ -126,7 +135,6 @@ st.markdown("""
         padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin: 2px; display: inline-block;
     }
     
-    /* Customiser les expanders pour qu'ils soient propres */
     [data-testid="stExpander"] {
         border: 1px solid #E2E8F0 !important;
         border-radius: 8px !important;
@@ -151,39 +159,43 @@ except ImportError as e:
 logging.basicConfig(level=logging.INFO)
 
 # ==================== LOGIQUE MÉTIER ====================
+# ==================== LOGIQUE MÉTIER ====================
+# ==================== LOGIQUE MÉTIER ====================
 def _process_cv_one_shot(text_content, job_desc) -> dict:
     llm = create_analyzer()
     prompt = f"""
-    Tu es un Directeur Technique et Recruteur IMPITOYABLE. 
-    TACHE : Évalue l'adéquation technique exacte entre ce CV et cette offre.
+    Tu es un Directeur d'Ingénierie (VP of Engineering) extrêmement exigeant.
+    Ton but : recruter des "Problem Solvers" qui comprennent le produit, pas des "Dictionnaires de mots-clés".
     
-    JOB DESCRIPTION: {job_desc[:1500]}
-    TEXTE DU CV : {text_content[:6000]}
+    OFFRE D'EMPLOI : {job_desc[:1500]}
+    CV DU CANDIDAT : {text_content[:6000]}
     
-    RÈGLES DE SCORING (BARÈME MATHÉMATIQUE STRICT) :
-    🚨 RÈGLE DE SURVIE : Si l'expérience du candidat n'a RIEN A VOIR avec le métier de l'offre (ex: un commercial qui postule comme Data Scientist), le score 'n_hard_skills_coeur' DOIT ÊTRE DE 0/65.
+    RÈGLES D'ÉVALUATION DRASTIQUES (CHANGEMENT DE PARADIGME) :
+    Tu vas évaluer la CAPACITÉ À RÉSOUDRE LE PROBLÈME CENTRAL DE L'OFFRE, pas faire un jeu de correspondances de mots.
     
-    - 'n_hard_skills_coeur' (Sur 65) : Calcule la note ainsi :
-        * 55-65 : Le candidat maîtrise 100% des technologies clés de l'offre avec des années de pratique prouvées.
-        * 35-54 : Le candidat maîtrise certaines technos, mais il lui manque au moins une compétence technique CRUCIALE demandée dans l'offre.
-        * 15-34 : Connaissances théoriques, profil junior, ou ne possède que 20% de la stack technique demandée.
-        * 0-14 : Débutant total ou profil hors sujet.
-        
-    - 'n_outils_metier' (Sur 10) : 1 point par outil de l'offre réellement écrit sur le CV.
-    - 'n_business_impact' (Sur 10) : 0/10 direct s'il n'y a AUCUNE métrique chiffrée (euros, pourcentages) dans ses expériences.
-    - 'n_seniorite' (Sur 5) : 5 uniquement si le nombre d'années d'expérience requis est atteint.
-    - 'n_soft_skills' (Sur 5) : Ne mets jamais plus de 3.
-    - 'n_storytelling' (Sur 5) : Ne mets jamais plus de 3.
+    - 'n_hard_skills_coeur' (Sur 65) - ÉVALUATION DE L'INGÉNIERIE ET DU CONTEXTE :
+       * 50 à 65 : Le candidat prouve qu'il a déjà résolu LES MÊMES DÉFIS que l'offre (ex: scalabilité, refonte, création from scratch), avec un niveau de complexité similaire. Peu importe s'il lui manque un outil mineur, c'est un vrai ingénieur.
+       * 30 à 49 : Le candidat a le bon socle technique, mais les contextes de ses projets passés sont un peu plus simples ou différents de l'offre.
+       * 10 à 29 : SYNDROME DU MOT-CLÉ. Le CV est un catalogue de technos sans contexte. Tu ne comprends pas ce qu'il a vraiment construit ni pourquoi. LA NOTE NE DOIT PAS DÉPASSER 29, même si toutes les technos de l'offre sont écrites sur le CV.
+       * 0 à 9 : Aucun rapport avec l'ingénierie demandée.
+       
+    - 'n_outils_metier' (Sur 10) : Pratique des bons paradigmes (ex: CI/CD, Cloud, tests automatisés) plus que des outils précis.
+    - 'n_business_impact' (Sur 10) : 0 s'il n'y a que des descriptions de tâches génériques.
+    - 'n_seniorite' (Sur 5) : Cohérence de l'expérience avec la difficulté du poste.
+    - 'n_soft_skills' (Sur 5) : Rigueur, clarté.
+    - 'n_storytelling' (Sur 5) : 0 si c'est un CV "liste de courses".
     
     OUTPUT JSON STRICT : 
-    IMPORTANT : Tu dois obligatoirement remplir la clé "analyse_preliminaire" EN PREMIER pour justifier tes futurs scores en listant ce qu'il MANQUE au candidat.
+    IMPORTANT : Remplis d'abord "enjeu_offre", "preuve_ingenierie" et "niveau_bullshit". C'est ce qui va forcer ta note finale à changer DRASTIQUEMENT.
     {{ 
-        "analyse_preliminaire": "Le candidat maîtrise X et Y, mais il ne mentionne absolument pas Z qui est requis. Son impact business n'est pas chiffré. Le score technique sera donc moyen/faible.",
+        "enjeu_offre": "L'enjeu numéro 1 du poste n'est pas d'utiliser [Techno], c'est de [ex: scaler une API, maintenir du legacy, construire from scratch]...",
+        "preuve_ingenierie": "Le candidat a-t-il prouvé qu'il a déjà géré cet enjeu précis ? Oui/Non, car...",
+        "niveau_bullshit": "[Faible/Élevé]. Le CV explique [bien le 'pourquoi' et le 'comment' / ou est juste une liste de technos balancées au hasard].",
         "nom": "Prénom Nom",
         "titre_profil": "Titre du profil sur le CV",
         "email": "email@trouvé_ou_vide",
         "années_exp": 0,
-        "compétences": ["C1", "C2"],
+        "compétences": ["C1", "C2", "C3"],
         "réalisations_clés": ["Action 1", "Action 2"],
         "n_hard_skills_coeur": 0, 
         "n_outils_metier": 0, 
@@ -191,9 +203,9 @@ def _process_cv_one_shot(text_content, job_desc) -> dict:
         "n_seniorite": 0, 
         "n_soft_skills": 0, 
         "n_storytelling": 0,
-        "strength": "Atout majeur prouvé", 
-        "risk": "Lacune technique ou métier précise", 
-        "reasoning": "Conclusion ultra-courte" 
+        "strength": "Sa plus grande preuve d'ingénierie concrète", 
+        "risk": "Le plus grand décalage avec la réalité du poste", 
+        "reasoning": "Conclusion cash et directe" 
     }}
     """
     try:
@@ -288,25 +300,41 @@ elif launch_btn:
         st.warning("⚠️ Inputs manquants. Remplissez la barre latérale.")
     else:
         results = []
-        with st.spinner('Analyse par réseau de neurones en cours...'):
-            start_time = time.time()
-            for i, file in enumerate(uploaded_files):
-                text = extract_text_from_pdf(file)
-                if not text or len(text) < 20 or "ERREUR" in text:
-                    results.append({"nom": file.name, "score_final": 0, "reasoning": "Illisible."})
-                else:
-                    data = _process_cv_one_shot(text, job_description)
-                    n_coeur = min(int(data.get("n_hard_skills_coeur", 0)), 65)
-                    n_outils = min(int(data.get("n_outils_metier", 0)), 10)
-                    n_imp = min(int(data.get("n_business_impact", 0)), 10)
-                    n_sen = min(int(data.get("n_seniorite", 0)), 5)
-                    n_soft = min(int(data.get("n_soft_skills", 0)), 5)
-                    n_story = min(int(data.get("n_storytelling", 0)), 5)
-                    
-                    final_score = n_coeur + n_outils + n_imp + n_sen + n_soft + n_story
-                    data.update({"score_final": final_score, "n_coeur": n_coeur, "n_outils": n_outils, "n_imp": n_imp, "n_sen": n_sen, "n_soft": n_soft, "n_story": n_story})
-                    results.append(data)
-            end_time = time.time()
+        total_files = len(uploaded_files)
+        start_time = time.time()
+        
+        # --- CRÉATION DE LA BARRE DE PROGRESSION ---
+        st.markdown("<br>", unsafe_allow_html=True)
+        progress_text = "Initialisation du moteur d'analyse..."
+        progress_bar = st.progress(0, text=progress_text)
+
+        for i, file in enumerate(uploaded_files):
+            # Mise à jour de la barre et du texte avant chaque CV
+            current_percent = int((i / total_files) * 100)
+            progress_bar.progress(current_percent, text=f"🔍 Analyse en cours : {file.name} ({i+1}/{total_files})")
+            
+            text = extract_text_from_pdf(file)
+            if not text or len(text) < 20 or "ERREUR" in text:
+                results.append({"nom": file.name, "score_final": 0, "reasoning": "Document illisible ou vide."})
+            else:
+                data = _process_cv_one_shot(text, job_description)
+                n_coeur = min(int(data.get("n_hard_skills_coeur", 0)), 65)
+                n_outils = min(int(data.get("n_outils_metier", 0)), 10)
+                n_imp = min(int(data.get("n_business_impact", 0)), 10)
+                n_sen = min(int(data.get("n_seniorite", 0)), 5)
+                n_soft = min(int(data.get("n_soft_skills", 0)), 5)
+                n_story = min(int(data.get("n_storytelling", 0)), 5)
+                
+                final_score = n_coeur + n_outils + n_imp + n_sen + n_soft + n_story
+                data.update({"score_final": final_score, "n_coeur": n_coeur, "n_outils": n_outils, "n_imp": n_imp, "n_sen": n_sen, "n_soft": n_soft, "n_story": n_story})
+                results.append(data)
+        
+        # --- FIN DE L'ANALYSE ---
+        progress_bar.progress(100, text="✨ Analyse terminée ! Génération du tableau de bord...")
+        time.sleep(0.5) # Petite pause pour laisser le temps de lire "100%"
+        progress_bar.empty() # On fait disparaître la barre une fois fini pour un affichage propre
+        
+        end_time = time.time()
 
         results.sort(key=lambda x: int(x.get('score_final', 0)), reverse=True)
         
@@ -356,7 +384,6 @@ elif launch_btn:
                     st.markdown("</div>", unsafe_allow_html=True)
                 
                 with spot_col3:
-                    # FIX: Ajout de la clé unique pour le graphique Spotlight
                     st.plotly_chart(create_radar_chart(top_cand), use_container_width=True, config={'displayModeBar': False}, key="radar_top")
                 
                 st.markdown("<hr style='border-color: #E2E8F0; margin: 15px 0;'>", unsafe_allow_html=True)
@@ -370,7 +397,6 @@ elif launch_btn:
         if len(results) > 1:
             st.markdown("<br><h4 style='color: #0F172A; margin-bottom: 1rem; padding-left: 1rem;'>📋 Autres Profils Analysés</h4>", unsafe_allow_html=True)
             
-            # FIX: Ajout de enumerate pour générer un ID unique par graphique
             for idx, res in enumerate(results[1:]):
                 score = res.get('score_final', 0)
                 color = "#10B981" if score >= 60 else ("#F59E0B" if score >= 40 else "#EF4444")
@@ -393,7 +419,6 @@ elif launch_btn:
                         col_r1, col_r2 = st.columns([1, 1.5])
                         
                         with col_r1:
-                            # FIX: Ajout de la clé unique basée sur l'index de la boucle
                             st.plotly_chart(create_radar_chart(res), use_container_width=True, config={'displayModeBar': False}, key=f"radar_runner_{idx}")
                         
                         with col_r2:
