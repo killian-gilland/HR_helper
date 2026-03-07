@@ -62,7 +62,7 @@ class LLMAnalyzer:
 
         try:
             # On laisse un timeout large au cas où le premier chargement soit long
-            response = requests.post(self.api_url, json=payload, timeout=300) 
+            response = requests.post(self.api_url, json=payload, timeout=500) 
             
             if response.status_code == 200:
                 json_resp = response.json()
