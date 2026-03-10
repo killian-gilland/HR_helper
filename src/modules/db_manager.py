@@ -115,3 +115,11 @@ def delete_job_offer(offer_id):
     c.execute("DELETE FROM job_offers WHERE id=?", (offer_id,))
     conn.commit()
     conn.close()
+
+def update_candidate_data(cand_id, new_data):
+    """Met à jour le JSON du candidat (ex: pour sauvegarder les questions d'entretien de façon permanente)."""
+    conn = sqlite3.connect(DB_NAME)
+    c = conn.cursor()
+    c.execute("UPDATE candidates SET analyse_json = ? WHERE id = ?", (json.dumps(new_data), cand_id))
+    conn.commit()
+    conn.close()
