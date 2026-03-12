@@ -1,6 +1,6 @@
 """
 Recruitment Analyst - ÉDITION DASHBOARD ENTERPRISE
-Architecture Modulaire, UI/UX SaaS B2B, Persistance SQLite, Export Excel, et Mode Copilote.
+Architecture Modulaire, UI/UX SaaS B2B, Persistance SQLite, Export Excel Dynamique, Shortlist avec Formulaires Multiples.
 """
 import streamlit as st
 import json
@@ -23,7 +23,7 @@ try:
     from src.modules.db_manager import init_db, create_job_offer, get_all_job_offers, save_candidate, get_candidates_by_offer, delete_candidate, delete_job_offer, update_candidate_data
     from src.modules.scoring_engine import process_cv_scoring
     from src.modules.interview_generator import generate_interview_questions
-    from src.modules.ui_components import create_radar_chart, make_progress_bar
+    from src.modules.ui_components import create_radar_chart
 except ImportError as e:
     st.error(f"Erreur d'import : {e}. Assurez-vous que les fichiers existent dans src/modules/")
     st.stop()
@@ -46,17 +46,16 @@ st.markdown("""
     [data-testid="stSidebar"] p, [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] span, [data-testid="stSidebar"] label { color: #F8FAFC !important; }
     
     [data-testid="stSidebar"] input, [data-testid="stSidebar"] textarea, [data-testid="stSidebar"] select { background-color: #1E293B !important; color: #FFFFFF !important; border: 1px solid #475569 !important; border-radius: 8px !important; }
+    
     [data-testid="stSidebar"] input::placeholder, 
-    [data-testid="stSidebar"] textarea::placeholder { 
-        color: #94A3B8 !important; 
-        opacity: 0.8 !important; 
-    }
+    [data-testid="stSidebar"] textarea::placeholder { color: #94A3B8 !important; opacity: 0.8 !important; }
+
     [data-testid="stFileUploadDropzone"] { background-color: #0F172A !important; border: 2px dashed #475569 !important; border-radius: 8px !important; }
     [data-testid="stFileUploadDropzone"] *, [data-testid="stFileUploadDropzone"] svg { color: #F8FAFC !important; fill: #F8FAFC !important; }
     
-    /* --- BOUTONS PRINCIPAUX (Sleek, Sombre, Enterprise) --- */
+    /* --- BOUTONS PRINCIPAUX --- */
     button[kind="primary"], [data-testid="stDownloadButton"] button, [data-testid="stFileUploader"] button { 
-        background-color: #1E293B !important; /* Gris Ardoise foncé */
+        background-color: #1E293B !important; 
         color: #FFFFFF !important; 
         font-weight: 600 !important; 
         font-size: 0.85rem !important;
@@ -65,7 +64,7 @@ st.markdown("""
         padding: 0.4rem 0.8rem !important; 
         text-transform: uppercase; 
         transition: background-color 0.2s, transform 0.1s;
-        min-height: 45px !important; /* Beaucoup plus fin */
+        min-height: 45px !important; 
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
@@ -73,13 +72,10 @@ st.markdown("""
         line-height: 1.2 !important;
         width: 100% !important;
     }
-    button[kind="primary"]:hover, [data-testid="stDownloadButton"] button:hover { 
-        background-color: #0F172A !important; /* Encore plus sombre au survol */
-        transform: translateY(-1px); 
-    }
+    button[kind="primary"]:hover, [data-testid="stDownloadButton"] button:hover { background-color: #0F172A !important; transform: translateY(-1px); }
     button[kind="primary"]:active { border-color: #EF4444 !important; } 
     
-    /* --- BOUTONS SECONDAIRES DISCRETS --- */
+    /* --- BOUTONS SECONDAIRES --- */
     button[kind="secondary"] {
         background: transparent !important;
         border: none !important;
@@ -93,9 +89,7 @@ st.markdown("""
         font-weight: 700 !important;
         transition: color 0.2s;
     }
-    button[kind="secondary"]:hover {
-        color: #3B82F6 !important;
-    }
+    button[kind="secondary"]:hover { color: #3B82F6 !important; }
 
     .dash-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); border: 1px solid #E2E8F0; }
 </style>
@@ -219,7 +213,8 @@ with tab1:
                     save_candidate(data, current_offer_id)
                     results.append(data)
                 
-                time.sleep(3)
+                # Régulateur de vitesse Groq (Max ~3 CVs par minute pour éviter la limite de tokens)
+                time.sleep(20)
             
             progress_bar.progress(100, text="Analyse terminée ! Base de données mise à jour.")
             time.sleep(1)
@@ -242,7 +237,7 @@ with tab2:
         df_history = get_candidates_by_offer(filter_offer_id)
         job_description_vivier = all_offers[all_offers['id'] == filter_offer_id]['description'].iloc[0]
         
-        # --- HEADER DU VIVIER (Boutons sans émojis) ---
+        # --- HEADER DU VIVIER (Boutons d'action) ---
         col_title, col_bulk_gen, col_bulk_del, col_export, col_del_offer = st.columns([1, 1.3, 1.3, 1.3, 1.3])
         
         with col_title:
@@ -306,12 +301,15 @@ with tab2:
 
         with col_export:
             if not df_history.empty:
+                offer_title_raw = all_offers[all_offers['id'] == filter_offer_id]['title'].iloc[0]
+                clean_title = offer_title_raw.replace(" ", "_").replace("/", "-").replace("\\", "-")
+                
                 df_export = prepare_export_df(df_history)
                 csv_data = df_export.to_csv(index=False, sep=';', encoding='utf-8-sig')
                 st.download_button(
                     label="Exporter vers Excel",
                     data=csv_data,
-                    file_name=f"candidats_campagne_{filter_offer_id}.csv",
+                    file_name=f"candidats_Top_{clean_title}.csv",
                     mime="text/csv",
                     use_container_width=True
                 )
@@ -344,91 +342,151 @@ with tab2:
         if df_history.empty:
             st.info("Aucun candidat n'a encore été analysé pour cette campagne.")
         else:
-            all_selected = True
-            for _, row in df_history.iterrows():
-                if not st.session_state.get(f"select_cand_{row['id']}", False):
-                    all_selected = False
-                    break
+            # ⚡ 2 FORMULAIRES INDÉPENDANTS (Un bouton Appliquer par filtre)
+            max_cands = len(df_history)
             
-            master_val = st.checkbox("Tout sélectionner", value=all_selected)
+            # Initialisation des filtres en mémoire (Session State)
+            if "applied_top_n" not in st.session_state:
+                st.session_state.applied_top_n = min(5, max_cands)
+            # Sécurité si on change de campagne et que l'ancien filtre était plus grand que la nouvelle liste
+            if st.session_state.applied_top_n > max_cands and max_cands > 0:
+                st.session_state.applied_top_n = max_cands
+                
+            if "applied_sort" not in st.session_state:
+                st.session_state.applied_sort = "Score : Du meilleur au moins bon"
+                
+            sort_options = ["Score : Du meilleur au moins bon", "Score : Du moins bon au meilleur", "Nom : Ordre alphabétique (A-Z)"]
+
+            st.markdown("<div style='margin-bottom: 10px; font-weight: 600; color: #475569;'>Filtres et Tris</div>", unsafe_allow_html=True)
+            col_f1, col_f2 = st.columns(2)
             
-            if master_val != all_selected:
-                for _, row in df_history.iterrows():
-                    st.session_state[f"select_cand_{row['id']}"] = master_val
-                st.rerun()
+            # Formulaire 1 : Le TOP X
+            with col_f1:
+                with st.form(key="form_top_n", border=True):
+                    new_top_n = st.number_input(
+                        "🏆 Afficher le Top X des candidats :", 
+                        min_value=1, 
+                        max_value=max_cands, 
+                        value=st.session_state.applied_top_n, 
+                        step=1,
+                        help=f"Maximum actuel : {max_cands} candidats."
+                    )
+                    submit_top = st.form_submit_button("Appliquer", type="secondary")
+                    if submit_top:
+                        st.session_state.applied_top_n = new_top_n
+                        st.rerun()
+
+            # Formulaire 2 : Le TRI
+            with col_f2:
+                with st.form(key="form_sort", border=True):
+                    new_sort = st.selectbox(
+                        "↕️ Trier l'affichage :", 
+                        sort_options,
+                        index=sort_options.index(st.session_state.applied_sort) if st.session_state.applied_sort in sort_options else 0
+                    )
+                    submit_sort = st.form_submit_button("Appliquer", type="secondary")
+                    if submit_sort:
+                        st.session_state.applied_sort = new_sort
+                        st.rerun()
+
+            # --- APPLICATION DU TOP X ET TRIS SUR LES DONNÉES (Utilisation des états en mémoire) ---
+            df_top = df_history.nlargest(st.session_state.applied_top_n, 'score_final')
             
-            for index, row in df_history.iterrows():
-                score = row['score_final']
-                color = "#10B981" if score >= 60 else ("#F59E0B" if score >= 40 else "#EF4444")
+            if st.session_state.applied_sort == "Score : Du meilleur au moins bon":
+                df_display = df_top.sort_values(by='score_final', ascending=False)
+            elif st.session_state.applied_sort == "Score : Du moins bon au meilleur":
+                df_display = df_top.sort_values(by='score_final', ascending=True)
+            else:
+                df_display = df_top.sort_values(by='nom', ascending=True)
+
+            if df_display.empty:
+                st.warning("Aucun candidat trouvé.")
+            else:
+                all_selected = True
+                for _, row in df_display.iterrows():
+                    if not st.session_state.get(f"select_cand_{row['id']}", False):
+                        all_selected = False
+                        break
                 
-                try:
-                    cand_data = json.loads(row['analyse_json'])
-                except:
-                    cand_data = {}
+                master_val = st.checkbox(f"Tout sélectionner ({len(df_display)} candidats affichés)", value=all_selected)
                 
-                col_chk, col_card = st.columns([0.5, 11.5])
+                if master_val != all_selected:
+                    for _, row in df_display.iterrows():
+                        st.session_state[f"select_cand_{row['id']}"] = master_val
+                    st.rerun()
                 
-                with col_chk:
-                    st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
-                    st.checkbox(" ", key=f"select_cand_{row['id']}", label_visibility="collapsed")
-                
-                with col_card:
-                    st.markdown(f"""
-                    <div class='dash-card' style='margin: 0px 0 10px 0; display: flex; align-items: center; padding: 15px 20px;'>
-                        <div style='background: {color}; color: white; border-radius: 8px; font-weight: 800; font-size: 1.2rem; padding: 8px 12px; margin-right: 20px; min-width: 60px; text-align: center;'>{score}</div>
-                        <div style='flex-grow: 1;'>
-                            <div style='font-size: 1.1rem; font-weight: 700; color: #0F172A;'>{row['nom']} <span style='font-weight: 400; color: #64748B; font-size: 0.9rem;'>— {row['titre_profil']}</span></div>
-                            <div style='font-size: 0.85rem; color: #475569; margin-top: 4px;'><b>Scanné le :</b> {row['date_scan']}</div>
-                        </div>
-                    </div>
-                    """, unsafe_allow_html=True)
+                for index, row in df_display.iterrows():
+                    score = row['score_final']
+                    color = "#10B981" if score >= 60 else ("#F59E0B" if score >= 40 else "#EF4444")
                     
-                    with st.expander(f"Voir l'analyse détaillée de {row['nom']}"):
-                        col1, col2 = st.columns([2, 1])
-                        with col1:
-                            st.markdown(f"**Preuve d'Ingénierie :** {cand_data.get('preuve_ingenierie', 'Non précisé')}")
-                            st.markdown(f"**Force :** <span style='color:#10B981;'>{cand_data.get('strength', '-')}</span>", unsafe_allow_html=True)
-                            st.markdown(f"**Risque :** <span style='color:#EF4444;'>{cand_data.get('risk', '-')}</span>", unsafe_allow_html=True)
-                            st.markdown(f"**Conclusion :** {cand_data.get('reasoning', '')}")
-                        with col2:
-                            st.plotly_chart(create_radar_chart(cand_data), use_container_width=True, config={'displayModeBar': False}, key=f"hist_radar_{row['id']}")
+                    try:
+                        cand_data = json.loads(row['analyse_json'])
+                    except:
+                        cand_data = {}
+                    
+                    col_chk, col_card = st.columns([0.5, 11.5])
+                    
+                    with col_chk:
+                        st.markdown("<div style='height: 40px;'></div>", unsafe_allow_html=True)
+                        st.checkbox(" ", key=f"select_cand_{row['id']}", label_visibility="collapsed")
+                    
+                    with col_card:
+                        st.markdown(f"""
+                        <div class='dash-card' style='margin: 0px 0 10px 0; display: flex; align-items: center; padding: 15px 20px;'>
+                            <div style='background: {color}; color: white; border-radius: 8px; font-weight: 800; font-size: 1.2rem; padding: 8px 12px; margin-right: 20px; min-width: 60px; text-align: center;'>{score}</div>
+                            <div style='flex-grow: 1;'>
+                                <div style='font-size: 1.1rem; font-weight: 700; color: #0F172A;'>{row['nom']} <span style='font-weight: 400; color: #64748B; font-size: 0.9rem;'>— {row['titre_profil']}</span></div>
+                                <div style='font-size: 0.85rem; color: #475569; margin-top: 4px;'><b>Scanné le :</b> {row['date_scan']}</div>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
                         
-                        st.markdown("<hr style='border-color: #E2E8F0; margin: 15px 0;'>", unsafe_allow_html=True)
-                        
-                        q_data = cand_data.get("interview_questions")
-                        
-                        if not q_data and score > 0:
-                            st.markdown("<div style='padding:10px; color:#64748B; font-style:italic;'>Questions non générées. Cochez ce candidat et utilisez le bouton 'Générer Entretiens' en haut de la page.</div>", unsafe_allow_html=True)
-                        elif q_data:
-                            st.markdown("<div style='background-color:#F8FAFC; padding:15px; border-radius:8px; border:1px solid #E2E8F0;'>", unsafe_allow_html=True)
-                            st.markdown("#### Questions d'entretien suggérées par l'IA")
-                            for key in ["q1_force", "q2_risque", "q3_situation"]:
-                                if key in q_data:
-                                    st.markdown(f"**{q_data[key].get('titre', '')}**")
-                                    st.markdown(f"*« {q_data[key].get('question', '')} »*")
-                                    st.markdown(f"**À valider :** {q_data[key].get('attente', '')}")
-                                    st.markdown("<br>", unsafe_allow_html=True)
-                            st.markdown("</div>", unsafe_allow_html=True)
-                        
-                        st.markdown("<br>", unsafe_allow_html=True)
-                        
-                        cand_del_key = f"del_cand_{row['id']}"
-                        if cand_del_key not in st.session_state:
-                            st.session_state[cand_del_key] = False
+                        with st.expander(f"Voir l'analyse détaillée de {row['nom']}"):
+                            col1, col2 = st.columns([2, 1])
+                            with col1:
+                                st.markdown(f"**Preuve d'Ingénierie :** {cand_data.get('preuve_ingenierie', 'Non précisé')}")
+                                st.markdown(f"**Force :** <span style='color:#10B981;'>{cand_data.get('strength', '-')}</span>", unsafe_allow_html=True)
+                                st.markdown(f"**Risque :** <span style='color:#EF4444;'>{cand_data.get('risk', '-')}</span>", unsafe_allow_html=True)
+                                st.markdown(f"**Conclusion :** {cand_data.get('reasoning', '')}")
+                            with col2:
+                                st.plotly_chart(create_radar_chart(cand_data), use_container_width=True, config={'displayModeBar': False}, key=f"hist_radar_{row['id']}")
                             
-                        if not st.session_state[cand_del_key]:
-                            if st.button(f"Supprimer ce candidat", type="secondary", key=f"btn_{cand_del_key}"):
-                                st.session_state[cand_del_key] = True
-                                st.rerun()
-                        else:
-                            st.warning("Confirmer la suppression ?")
-                            cY, cN = st.columns([1, 1])
-                            with cY:
-                                if st.button("Oui, supprimer", type="primary", key=f"yes_{cand_del_key}"):
-                                    delete_candidate(row['id'])
-                                    st.session_state[cand_del_key] = False
+                            st.markdown("<hr style='border-color: #E2E8F0; margin: 15px 0;'>", unsafe_allow_html=True)
+                            
+                            q_data = cand_data.get("interview_questions")
+                            
+                            if not q_data and score > 0:
+                                st.markdown("<div style='padding:10px; color:#64748B; font-style:italic;'>Questions non générées. Cochez ce candidat et utilisez le bouton 'Générer Entretiens' en haut de la page.</div>", unsafe_allow_html=True)
+                            elif q_data:
+                                st.markdown("<div style='background-color:#F8FAFC; padding:15px; border-radius:8px; border:1px solid #E2E8F0;'>", unsafe_allow_html=True)
+                                st.markdown("#### Questions d'entretien suggérées par l'IA")
+                                for key in ["q1_force", "q2_risque", "q3_situation"]:
+                                    if key in q_data:
+                                        st.markdown(f"**{q_data[key].get('titre', '')}**")
+                                        st.markdown(f"*« {q_data[key].get('question', '')} »*")
+                                        st.markdown(f"**À valider :** {q_data[key].get('attente', '')}")
+                                        st.markdown("<br>", unsafe_allow_html=True)
+                                st.markdown("</div>", unsafe_allow_html=True)
+                            
+                            st.markdown("<br>", unsafe_allow_html=True)
+                            
+                            cand_del_key = f"del_cand_{row['id']}"
+                            if cand_del_key not in st.session_state:
+                                st.session_state[cand_del_key] = False
+                                
+                            if not st.session_state[cand_del_key]:
+                                if st.button(f"Supprimer ce candidat", type="secondary", key=f"btn_{cand_del_key}"):
+                                    st.session_state[cand_del_key] = True
                                     st.rerun()
-                            with cN:
-                                if st.button("Annuler", type="secondary", key=f"no_{cand_del_key}"):
-                                    st.session_state[cand_del_key] = False
-                                    st.rerun()
+                            else:
+                                st.warning("Confirmer la suppression ?")
+                                cY, cN = st.columns([1, 1])
+                                with cY:
+                                    if st.button("Oui, supprimer", type="primary", key=f"yes_{cand_del_key}"):
+                                        delete_candidate(row['id'])
+                                        st.session_state[cand_del_key] = False
+                                        st.rerun()
+                                with cN:
+                                    if st.button("Annuler", type="secondary", key=f"no_{cand_del_key}"):
+                                        st.session_state[cand_del_key] = False
+                                        st.rerun()
