@@ -1,0 +1,50 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+html, body, [class*="css"] {font-family: 'Inter', sans-serif !important;}
+.stApp {background-color: #F8FAFC !important;}
+#MainMenu, footer {display: none !important;} 
+
+header {background-color: transparent !important;}
+.block-container {padding-top: 4.5rem !important; max-width: 1400px !important;}
+
+[data-testid="stSidebar"] { background-color: #0B1120 !important; border-right: 1px solid #1E293B !important; }
+[data-testid="stSidebar"] p, [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] span, [data-testid="stSidebar"] label { color: #F8FAFC !important; }
+[data-testid="stSidebar"] input, [data-testid="stSidebar"] textarea, [data-testid="stSidebar"] select { background-color: #1E293B !important; color: #FFFFFF !important; border: 1px solid #475569 !important; border-radius: 8px !important; }
+[data-testid="stSidebar"] input::placeholder, [data-testid="stSidebar"] textarea::placeholder { color: #94A3B8 !important; opacity: 0.8 !important; }
+
+[data-testid="stFileUploadDropzone"] { background-color: #0F172A !important; border: 2px dashed #475569 !important; border-radius: 8px !important; }
+[data-testid="stFileUploadDropzone"] *, [data-testid="stFileUploadDropzone"] svg { color: #F8FAFC !important; fill: #F8FAFC !important; }
+
+/* BOUTONS PRINCIPAUX */
+button[kind="primary"], [data-testid="stDownloadButton"] button, [data-testid="stFileUploader"] button { 
+    background-color: #1E293B !important; color: #FFFFFF !important; font-weight: 600 !important; font-size: 0.85rem !important;
+    border-radius: 6px !important; border: 1px solid #0F172A !important; padding: 0.4rem 0.8rem !important; text-transform: uppercase; 
+    transition: background-color 0.2s, transform 0.1s; min-height: 45px !important; display: flex !important;
+    align-items: center !important; justify-content: center !important; text-align: center !important; width: 100% !important;
+}
+button[kind="primary"]:hover, [data-testid="stDownloadButton"] button:hover { background-color: #0F172A !important; transform: translateY(-1px); }
+button[kind="primary"]:active { border-color: #EF4444 !important; } 
+
+/* BOUTONS SECONDAIRES */
+button[kind="secondary"] {
+    background: transparent !important; border: none !important; color: #64748B !important; box-shadow: none !important; 
+    padding: 0 !important; min-height: 0 !important; text-transform: uppercase !important; font-size: 0.8rem !important; 
+    width: auto !important; font-weight: 700 !important; transition: color 0.2s;
+}
+button[kind="secondary"]:hover { color: #3B82F6 !important; }
+
+/* BOUTONS DES FILTRES */
+[data-testid="stFormSubmitButton"] button {
+    background-color: #F1F5F9 !important; color: #475569 !important; border: 1px solid #CBD5E1 !important;
+    border-radius: 6px !important; padding: 0.2rem 0.8rem !important; font-size: 0.75rem !important;
+    font-weight: 600 !important; text-transform: uppercase !important; min-height: 32px !important;
+    width: auto !important; box-shadow: none !important;
+}
+[data-testid="stFormSubmitButton"] button:hover { background-color: #E2E8F0 !important; color: #0F172A !important; border-color: #94A3B8 !important; }
+
+/* DRAPEAUX */
+.lang-btn button, .lang-btn button p, .lang-btn button span { font-size: 3.5rem !important; margin: 0 !important; padding: 0 !important;}
+.lang-btn button { background: transparent !important; border: none !important; transition: transform 0.2s;}
+.lang-btn button:hover { transform: scale(1.1); }
+
+/* CARTES */
+.dash-card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1); border: 1px solid #E2E8F0; }
