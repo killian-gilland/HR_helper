@@ -1,403 +1,374 @@
 """
-Recruitment Analyst - ÉDITION DASHBOARD ENTERPRISE
-Architecture Modulaire (src/modules/), UI/UX SaaS B2B, et Scoring Strict.
+Recruitment Analyst - ÉDITION SAAS PREMIUM (ULTRA-CLEAN UI)
+Code propre, modulaire, CSS séparé.
 """
 import streamlit as st
-import pandas as pd
 import json
 import logging
 import os
 import sys
-import re
 import time
-import plotly.graph_objects as go
 
 # --- CONFIGURATION ---
 st.set_page_config(page_title="Talent AI | Enterprise Sourcing", page_icon="🧿", layout="wide", initial_sidebar_state="expanded")
 
-# --- INJECTION CSS ---
-st.markdown("""
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-    
-    html, body, [class*="css"] {font-family: 'Inter', sans-serif !important;}
-    .stApp {background-color: #F8FAFC !important;}
-    #MainMenu, header, footer {display: none !important;}
-    .block-container {padding-top: 1.5rem !important; max-width: 1400px !important;}
-    
-    /* --- SIDEBAR CUSTOMIZATION --- */
-    [data-testid="stSidebar"] {
-        background-color: #0B1120 !important;
-        border-right: 1px solid #1E293B !important;
-    }
-    
-    [data-testid="stSidebar"] p, 
-    [data-testid="stSidebar"] h1, 
-    [data-testid="stSidebar"] h2, 
-    [data-testid="stSidebar"] h3, 
-    [data-testid="stSidebar"] span, 
-    [data-testid="stSidebar"] label {
-        color: #F8FAFC !important;
-    }
-    
-    /* --- FIX DE LA ZONE DE TEXTE (OFFRE D'EMPLOI) --- */
-    div[data-baseweb="textarea"] > textarea {
-        background-color: #F8FAFC !important;
-        color: #0F172A !important;
-        border: 1px solid #CBD5E1 !important;
-        border-radius: 8px !important;
-    }
-    div[data-baseweb="textarea"] > textarea:focus {
-        border-color: #3B82F6 !important;
-        box-shadow: 0 0 0 1px #3B82F6 !important;
-    }
-    .stTextArea label { display: none !important; }
-
-    /* --- FIX DU FILE UPLOADER (Contraste forcé) --- */
-    [data-testid="stFileUploader"] {
-        background-color: #0F172A !important;
-        border: 1px dashed #475569 !important;
-        border-radius: 8px !important;
-        padding: 1rem !important;
-    }
-    [data-testid="stFileUploader"] div, [data-testid="stFileUploader"] small {
-        color: #94A3B8 !important;
-    }
-    [data-testid="stFileUploader"] button {
-        background-color: #3B82F6 !important;
-        color: #FFFFFF !important;
-        border: none !important;
-        border-radius: 6px !important;
-        font-weight: 600 !important;
-    }
-    [data-testid="stFileUploader"] button:hover {
-        background-color: #2563EB !important;
-        color: #FFFFFF !important;
-    }
-    
-    /* Bouton Principal de Scan */
-    .stButton > button {
-        background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%) !important;
-        color: white !important;
-        border-radius: 6px !important;
-        font-weight: 700 !important;
-        border: 1px solid #1E40AF !important;
-        padding: 0.8rem 0 !important;
-        box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2) !important;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        transition: transform 0.2s;
-    }
-    .stButton > button:hover { transform: translateY(-2px); }
-    
-    /* --- MAIN DASHBOARD CARDS --- */
-    .dash-card {
-        background: white;
-        border-radius: 12px;
-        padding: 20px;
-        box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
-        border: 1px solid #E2E8F0;
-        height: 100%;
-    }
-    
-    .spotlight-card {
-        background: white;
-        border-radius: 16px;
-        padding: 24px;
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -4px rgba(0, 0, 0, 0.1);
-        border: 2px solid #3B82F6;
-        position: relative;
-        overflow: hidden;
-    }
-    
-    .meter-container {
-        background: #E2E8F0;
-        border-radius: 4px;
-        height: 8px;
-        width: 100%;
-        margin-top: 4px;
-        margin-bottom: 12px;
-        overflow: hidden;
-    }
-    .meter-fill { height: 100%; border-radius: 4px; }
-    
-    .badge-tech {
-        background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE;
-        padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; margin: 2px; display: inline-block;
-    }
-    
-    /* Customiser les expanders pour qu'ils soient propres */
-    [data-testid="stExpander"] {
-        border: 1px solid #E2E8F0 !important;
-        border-radius: 8px !important;
-        background: #F8FAFC !important;
-        margin-bottom: 15px !important;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# --- IMPORTS PROPRES (Architecture Modulaire) ---
 current_dir = os.path.dirname(os.path.abspath(__file__))
 if current_dir not in sys.path:
     sys.path.insert(0, current_dir)
 
 try:
-    from src.modules.llm_analyzer import create_analyzer
-    from src.modules.pdf_utils import extract_text_from_pdf
+    from src.modules.utils import extract_text_from_pdf, prepare_export_df
+    from src.modules.db_manager import (init_db, create_user, verify_user, create_job_offer, get_all_job_offers, save_candidate, get_candidates_by_offer, delete_candidate, delete_job_offer, update_candidate_data)
+    from src.modules.scoring_engine import process_cv_scoring
+    from src.modules.interview_generator import generate_interview_questions
+    from src.modules.ui_components import create_radar_chart
+    from src.modules.translations import t
 except ImportError as e:
-    st.error(f"Erreur d'import : {e}. Assurez-vous que les dossiers 'src' et 'modules' contiennent bien des fichiers __init__.py")
+    st.error(f"Erreur d'import : {e}. Assurez-vous que l'architecture des dossiers est respectée.")
     st.stop()
 
 logging.basicConfig(level=logging.INFO)
+init_db()
 
-# ==================== LOGIQUE MÉTIER ====================
-def _process_cv_one_shot(text_content, job_desc) -> dict:
-    llm = create_analyzer()
-    prompt = f"""
-    Tu es un Directeur Technique et Recruteur IMPITOYABLE. 
-    TACHE : Évalue l'adéquation technique exacte entre ce CV et cette offre.
+# ==================== CHARGEMENT DU CSS PROPRE ====================
+def load_css(file_name):
+    with open(file_name, "r", encoding="utf-8") as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+
+css_path = os.path.join(current_dir, "src", "assets", "style.css")
+if os.path.exists(css_path):
+    load_css(css_path)
+else:
+    st.warning(f"Le fichier CSS n'a pas été trouvé à l'emplacement : {css_path}")
+
+# ==================== GESTION DE SESSION ET LANGUE ====================
+if 'lang' not in st.session_state: st.session_state.lang = 'fr'
+
+if 'logged_in' not in st.session_state:
+    st.session_state.logged_in = False
+    st.session_state.user_id = None
+    st.session_state.company_name = None
+
+def logout():
+    st.session_state.logged_in = False; st.session_state.user_id = None; st.session_state.company_name = None; st.session_state.confirm_logout = False; st.rerun()
+
+# ==================== ÉCRAN DE CONNEXION ====================
+if not st.session_state.logged_in:
+    # On gère l'espacement global de la page
+    st.markdown("<style>.block-container {padding-top: 2rem !important;}</style>", unsafe_allow_html=True)
     
-    JOB DESCRIPTION: {job_desc[:1500]}
-    TEXTE DU CV : {text_content[:6000]}
+    # ⚡ ASTUCE : On met le Titre ET les drapeaux dans les mêmes colonnes pour les forcer sur la même ligne horizontale !
+    col_left, col_center, col_fr, col_en = st.columns([1, 8, 0.5, 0.5])
     
-    RÈGLES DE SCORING (BARÈME MATHÉMATIQUE STRICT) :
-    🚨 RÈGLE DE SURVIE : Si l'expérience du candidat n'a RIEN A VOIR avec le métier de l'offre (ex: un commercial qui postule comme Data Scientist), le score 'n_hard_skills_coeur' DOIT ÊTRE DE 0/65.
-    
-    - 'n_hard_skills_coeur' (Sur 65) : Calcule la note ainsi :
-        * 55-65 : Le candidat maîtrise 100% des technologies clés de l'offre avec des années de pratique prouvées.
-        * 35-54 : Le candidat maîtrise certaines technos, mais il lui manque au moins une compétence technique CRUCIALE demandée dans l'offre.
-        * 15-34 : Connaissances théoriques, profil junior, ou ne possède que 20% de la stack technique demandée.
-        * 0-14 : Débutant total ou profil hors sujet.
+    with col_center:
+        # margin-top: -15px compense l'alignement naturel du bouton Streamlit
+        st.markdown("<h1 style='text-align: center; margin-top: -15px; color: #0F172A; font-weight: 800; font-size: 3.2rem; letter-spacing: -1px;'>TALENT<span style='color: #3B82F6;'>.AI</span></h1>", unsafe_allow_html=True)
         
-    - 'n_outils_metier' (Sur 10) : 1 point par outil de l'offre réellement écrit sur le CV.
-    - 'n_business_impact' (Sur 10) : 0/10 direct s'il n'y a AUCUNE métrique chiffrée (euros, pourcentages) dans ses expériences.
-    - 'n_seniorite' (Sur 5) : 5 uniquement si le nombre d'années d'expérience requis est atteint.
-    - 'n_soft_skills' (Sur 5) : Ne mets jamais plus de 3.
-    - 'n_storytelling' (Sur 5) : Ne mets jamais plus de 3.
+    # ⚡ CORRECTION DRAPEAUX (Login) : Fini les <div class='lang-btn'> et bonjour type="tertiary"
+    with col_fr:
+        if st.button("🇫🇷", type="tertiary", key="btn_fr_login"): st.session_state.lang = 'fr'; st.rerun()
+        
+    with col_en:
+        if st.button("🇬🇧", type="tertiary", key="btn_en_login"): st.session_state.lang = 'en'; st.rerun()
+        
+    st.markdown("<br><br>", unsafe_allow_html=True)
     
-    OUTPUT JSON STRICT : 
-    IMPORTANT : Tu dois obligatoirement remplir la clé "analyse_preliminaire" EN PREMIER pour justifier tes futurs scores en listant ce qu'il MANQUE au candidat.
-    {{ 
-        "analyse_preliminaire": "Le candidat maîtrise X et Y, mais il ne mentionne absolument pas Z qui est requis. Son impact business n'est pas chiffré. Le score technique sera donc moyen/faible.",
-        "nom": "Prénom Nom",
-        "titre_profil": "Titre du profil sur le CV",
-        "email": "email@trouvé_ou_vide",
-        "années_exp": 0,
-        "compétences": ["C1", "C2"],
-        "réalisations_clés": ["Action 1", "Action 2"],
-        "n_hard_skills_coeur": 0, 
-        "n_outils_metier": 0, 
-        "n_business_impact": 0,
-        "n_seniorite": 0, 
-        "n_soft_skills": 0, 
-        "n_storytelling": 0,
-        "strength": "Atout majeur prouvé", 
-        "risk": "Lacune technique ou métier précise", 
-        "reasoning": "Conclusion ultra-courte" 
-    }}
-    """
-    try:
-        response = llm.client.generate_content(prompt)
-        txt = response.text
-        json_match = re.search(r'\{.*\}', txt, re.DOTALL)
-        if json_match: return json.loads(json_match.group(0))
-        return {"nom": "Erreur JSON"}
-    except Exception as e: return {"nom": f"Erreur IA : {str(e)}"}
+    # Formulaire de connexion
+    col1, col2, col3 = st.columns([1.2, 1.5, 1.2])
+    with col2:
+        auth_tab1, auth_tab2 = st.tabs(["Connexion" if st.session_state.lang == 'fr' else "Log In", "Créer un compte" if st.session_state.lang == 'fr' else "Sign Up"])
+        with auth_tab1:
+            st.markdown("<br>", unsafe_allow_html=True)
+            log_user = st.text_input(t('id'), key="log_user")
+            log_pass = st.text_input(t('pass'), type="password", key="log_pass")
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button(t('connect'), type="primary"):
+                user = verify_user(log_user, log_pass)
+                if user: st.session_state.logged_in = True; st.session_state.user_id = user[0]; st.session_state.company_name = user[1]; st.rerun()
+                else: st.error(t('err_creds'))
+                    
+        with auth_tab2:
+            st.markdown("<br>", unsafe_allow_html=True)
+            reg_comp = st.text_input(t('company'), key="reg_comp")
+            reg_user = st.text_input(t('id_wanted'), key="reg_user")
+            reg_pass = st.text_input(t('pass'), type="password", key="reg_pass_new")
+            st.markdown("<br>", unsafe_allow_html=True)
+            if st.button(t('create_space'), type="primary"):
+                if reg_comp and reg_user and reg_pass:
+                    if create_user(reg_user, reg_pass, reg_comp): st.success(t('succ_acct'))
+                    else: st.error(t('err_exist'))
+                else: st.warning(t('err_fill'))
+    st.stop()
 
-def create_radar_chart(res):
-    categories = ['Cœur Tech', 'Outils', 'Impact', 'Séniorité', 'Soft Skills', 'Clarté/Récit']
-    values = [
-        (res.get('n_coeur', 0) / 65) * 100, (res.get('n_outils', 0) / 10) * 100,
-        (res.get('n_imp', 0) / 10) * 100, (res.get('n_sen', 0) / 5) * 100,
-        (res.get('n_soft', 0) / 5) * 100, (res.get('n_story', 0) / 5) * 100
-    ]
-    values.append(values[0])
-    categories_closed = categories + [categories[0]]
-    
-    fig = go.Figure()
-    fig.add_trace(go.Scatterpolar(
-        r=values, theta=categories_closed, fill='toself', fillcolor='rgba(59, 130, 246, 0.2)',
-        line=dict(color='#3B82F6', width=2), name=res.get('nom', 'Candidat')
-    ))
-    fig.update_layout(
-        polar=dict(radialaxis=dict(visible=True, range=[0, 100], showticklabels=False)),
-        showlegend=False, margin=dict(l=30, r=30, t=20, b=20), height=250, paper_bgcolor='rgba(0,0,0,0)', plot_bgcolor='rgba(0,0,0,0)'
-    )
-    return fig
+# ==================== EN-TÊTE UTILISATEUR CONNECTÉ ====================
+# Si on arrive ici, l'utilisateur est connecté. On affiche les drapeaux seuls en haut à droite.
+col_spacer, col_fr, col_en = st.columns([8, 1, 1])
+# ⚡ CORRECTION DRAPEAUX (En-tête connecté) : Fini les <div class='lang-btn'> et bonjour type="tertiary"
+with col_fr:
+    if st.button("🇫🇷", type="tertiary", key="btn_fr_app"): st.session_state.lang = 'fr'; st.rerun()
+with col_en:
+    if st.button("🇬🇧", type="tertiary", key="btn_en_app"): st.session_state.lang = 'en'; st.rerun()
 
-def make_progress_bar(label, value, max_val, color_hex="#3B82F6"):
-    percent = (value / max_val) * 100
-    return f"""
-    <div style="display: flex; justify-content: space-between; font-size: 0.8rem; font-weight: 600; color: #475569; margin-top: 6px;">
-        <span>{label}</span><span>{value}/{max_val}</span>
-    </div>
-    <div class="meter-container"><div class="meter-fill" style="width: {percent}%; background-color: {color_hex};"></div></div>
-    """
+# ==================== INTERFACE SAAS PRINCIPALE ====================
 
-# ==================== INTERFACE SAAS ====================
+# --- SIDEBAR ---
 with st.sidebar:
-    st.markdown("<h2 style='color: white; font-weight: 900; font-size: 1.8rem; margin-bottom: 0;'>🧿 TALENT<span style='color: #3B82F6;'>.AI</span></h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #64748B; font-size: 0.75rem; font-weight: 600; margin-top: 0; margin-bottom: 30px; letter-spacing: 1px;'>ENTERPRISE SOURCING ENGINE</p>", unsafe_allow_html=True)
+    st.markdown("<h2 style='color: white; font-weight: 800; font-size: 2rem; margin-bottom: 0; letter-spacing: -1px;'>TALENT<span style='color: #3B82F6;'>.AI</span></h2>", unsafe_allow_html=True)
+    st.markdown(f"<p style='color: #10B981; font-size: 0.75rem; font-weight: 700; margin-top: 5px; margin-bottom: 40px; letter-spacing: 0.5px;'>● ESPACE : {st.session_state.company_name.upper()}</p>", unsafe_allow_html=True)
+    st.markdown(f"<p style='font-size: 0.75rem; font-weight: 700; color: #94A3B8; text-transform: uppercase; letter-spacing: 1px;'>{t('sb_step1')}</p>", unsafe_allow_html=True)
     
-    st.markdown("<p style='font-size: 0.8rem; font-weight: 700; color: #94A3B8; text-transform: uppercase; margin-bottom: 5px;'>1. Base de CV (PDF)</p>", unsafe_allow_html=True)
-    uploaded_files = st.file_uploader("Upload", type=["pdf"], accept_multiple_files=True, label_visibility="collapsed")
+    offers_df = get_all_job_offers(st.session_state.user_id)
+    offer_mode = st.radio(t('sb_mode'), [t('sb_new_offer'), t('sb_old_offer')], label_visibility="collapsed")
+    current_offer_id, job_description, offer_title = None, "", ""
     
-    st.markdown("<br><p style='font-size: 0.8rem; font-weight: 700; color: #94A3B8; text-transform: uppercase; margin-bottom: 5px;'>2. Job Description</p>", unsafe_allow_html=True)
-    job_description = st.text_area("Offre", height=200, placeholder="Exigences techniques, missions, stack...", label_visibility="collapsed")
-    
-    st.markdown("<br>", unsafe_allow_html=True)
-    launch_btn = st.button("Lancer le Scanning ⚡", use_container_width=True)
-
-# --- ZONE CENTRALE ---
-if not launch_btn and not uploaded_files:
-    st.markdown("""
-<div style="padding: 1rem 2rem;">
-<h1 style="color: #0F172A; font-weight: 800; font-size: 2.2rem; margin-bottom: 0.5rem;">Vue d'ensemble de l'espace de travail</h1>
-<p style="color: #64748B; font-size: 1.1rem; margin-bottom: 3rem;">Le moteur d'intelligence artificielle est prêt. Suivez les étapes ci-dessous pour lancer votre campagne de scoring.</p>
-
-<div style="display: flex; gap: 24px; margin-bottom: 40px; flex-wrap: wrap;">
-<div style="flex: 1; min-width: 250px; background: white; padding: 24px; border-radius: 12px; border: 1px solid #E2E8F0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-<div style="width: 48px; height: 48px; border-radius: 10px; background: #EFF6FF; color: #3B82F6; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 800; margin-bottom: 16px;">1</div>
-<h4 style="margin:0 0 8px 0; color: #0F172A; font-size: 1.1rem;">Import des Candidats</h4>
-<p style="margin:0; color: #64748B; font-size: 0.9rem; line-height: 1.5;">Glissez-déposez vos fichiers PDF dans le panneau latéral gauche.</p>
-</div>
-
-<div style="flex: 1; min-width: 250px; background: white; padding: 24px; border-radius: 12px; border: 1px solid #E2E8F0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-<div style="width: 48px; height: 48px; border-radius: 10px; background: #F3E8FF; color: #A855F7; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 800; margin-bottom: 16px;">2</div>
-<h4 style="margin:0 0 8px 0; color: #0F172A; font-size: 1.1rem;">Calibration de l'offre</h4>
-<p style="margin:0; color: #64748B; font-size: 0.9rem; line-height: 1.5;">Collez la description précise du poste. L'IA utilisera ce texte comme référentiel.</p>
-</div>
-
-<div style="flex: 1; min-width: 250px; background: white; padding: 24px; border-radius: 12px; border: 1px solid #E2E8F0; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);">
-<div style="width: 48px; height: 48px; border-radius: 10px; background: #ECFDF5; color: #10B981; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; font-weight: 800; margin-bottom: 16px;">3</div>
-<h4 style="margin:0 0 8px 0; color: #0F172A; font-size: 1.1rem;">Analyse & Radar</h4>
-<p style="margin:0; color: #64748B; font-size: 0.9rem; line-height: 1.5;">Le moteur va générer un classement complet avec graphiques d'adéquation.</p>
-</div>
-</div>
-
-<div style="background: white; border-radius: 12px; border: 2px dashed #CBD5E1; padding: 80px 20px; text-align: center; display: flex; flex-direction: column; align-items: center; justify-content: center;">
-<div style="background: #F1F5F9; width: 64px; height: 64px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; margin-bottom: 16px;">📈</div>
-<h3 style="margin:0 0 8px 0; color: #475569; font-size: 1.2rem;">Le tableau de bord est vide</h3>
-<p style="margin:0; color: #94A3B8; font-size: 0.95rem;">Cliquez sur "Lancer le Scanning" pour générer les rapports.</p>
-</div>
-</div>
-    """, unsafe_allow_html=True)
-
-elif launch_btn:
-    if not uploaded_files or not job_description:
-        st.warning("⚠️ Inputs manquants. Remplissez la barre latérale.")
+    if offer_mode == t('sb_new_offer'):
+        offer_title = st.text_input(t('sb_title'), placeholder="Lead Data Scientist")
+        job_description = st.text_area(t('sb_desc'), height=150)
     else:
-        results = []
-        with st.spinner('Analyse par réseau de neurones en cours...'):
-            start_time = time.time()
+        if offers_df.empty: st.warning(t('sb_no_camp'))
+        else:
+            offer_map = dict(zip(offers_df['title'] + " (" + offers_df['created_at'].str.split().str[0] + ")", offers_df['id']))
+            selected_offer = st.selectbox(t('sb_select'), list(offer_map.keys()))
+            current_offer_id = offer_map[selected_offer]
+            job_description = offers_df[offers_df['id'] == current_offer_id]['description'].iloc[0]
+            st.text_area(t('sb_desc'), job_description, height=150, disabled=True)
+
+    st.markdown(f"<br><p style='font-size: 0.75rem; font-weight: 700; color: #94A3B8; text-transform: uppercase; letter-spacing: 1px;'>{t('sb_step2')}</p>", unsafe_allow_html=True)
+    uploaded_files = st.file_uploader("Upload", type=["pdf"], accept_multiple_files=True, label_visibility="collapsed")
+    st.markdown("<br>", unsafe_allow_html=True)
+    launch_btn = st.button(t('btn_launch'), type="primary", use_container_width=True)
+    
+    st.markdown("<br><div style='margin-top:20px; border-top: 1px solid #1E293B; padding-top:20px;'></div>", unsafe_allow_html=True)
+    if 'confirm_logout' not in st.session_state: st.session_state.confirm_logout = False
+
+    if not st.session_state.confirm_logout:
+        if st.button(t('btn_logout'), type="secondary"): st.session_state.confirm_logout = True; st.rerun()
+    else:
+        st.warning(t('ask_sure'))
+        c_yes, c_no = st.columns(2)
+        with c_yes:
+            if st.button(t('yes'), type="primary", key="btn_yes_log"): logout()
+        with c_no:
+            if st.button(t('no'), type="secondary", key="btn_no_log"): st.session_state.confirm_logout = False; st.rerun()
+
+# ⚡ NAVIGATION : Segmented Control Feel
+if 'current_page' not in st.session_state: st.session_state.current_page = 'scan'
+
+col_nav1, col_nav2, col_nav3 = st.columns([3, 4, 5])
+with col_nav1:
+    if st.button(t('tab_scan'), type="primary" if st.session_state.current_page == 'scan' else "secondary", use_container_width=True):
+        st.session_state.current_page = 'scan'; st.rerun()
+with col_nav2:
+    if st.button(t('tab_pool'), type="primary" if st.session_state.current_page == 'pool' else "secondary", use_container_width=True):
+        st.session_state.current_page = 'pool'; st.rerun()
+
+st.markdown("<hr style='margin-top: 10px; margin-bottom: 30px;'>", unsafe_allow_html=True)
+
+
+# --- PAGE 1 : SCAN ---
+if st.session_state.current_page == 'scan':
+    if not launch_btn:
+        st.markdown(f"""
+        <div style="padding: 1rem 0;">
+        <h1 style="color: #0F172A; font-weight: 800; font-size: 2.5rem; letter-spacing: -1px; margin-bottom: 0.5rem;">{t('hello').format(st.session_state.company_name)}</h1>
+        <p style="color: #64748B; font-size: 1.1rem; font-weight: 400; margin-bottom: 2rem;">{t('hello_sub')}</p>
+        </div>
+        """, unsafe_allow_html=True)
+        if uploaded_files: st.info("📄 Documents chargés et prêts pour l'analyse. Cliquez sur le bouton de lancement dans le menu à gauche.")
+
+    elif launch_btn:
+        if not uploaded_files: st.warning(t('warn_no_cv'))
+        elif offer_mode == t('sb_new_offer') and (not offer_title or not job_description): st.warning(t('warn_no_title'))
+        else:
+            if offer_mode == t('sb_new_offer'):
+                current_offer_id = create_job_offer(offer_title, job_description, st.session_state.user_id)
+                st.success(t('succ_camp').format(offer_title))
+            
+            progress_bar = st.progress(0, text=t('prog_init'))
             for i, file in enumerate(uploaded_files):
+                progress_bar.progress(int((i / len(uploaded_files)) * 100), text=t('prog_scan').format(file.name, i+1, len(uploaded_files)))
                 text = extract_text_from_pdf(file)
                 if not text or len(text) < 20 or "ERREUR" in text:
-                    results.append({"nom": file.name, "score_final": 0, "reasoning": "Illisible."})
+                    save_candidate({"nom": file.name, "score_final": 0, "reasoning": t('err_doc')}, current_offer_id)
                 else:
-                    data = _process_cv_one_shot(text, job_description)
-                    n_coeur = min(int(data.get("n_hard_skills_coeur", 0)), 65)
-                    n_outils = min(int(data.get("n_outils_metier", 0)), 10)
-                    n_imp = min(int(data.get("n_business_impact", 0)), 10)
-                    n_sen = min(int(data.get("n_seniorite", 0)), 5)
-                    n_soft = min(int(data.get("n_soft_skills", 0)), 5)
-                    n_story = min(int(data.get("n_storytelling", 0)), 5)
-                    
-                    final_score = n_coeur + n_outils + n_imp + n_sen + n_soft + n_story
-                    data.update({"score_final": final_score, "n_coeur": n_coeur, "n_outils": n_outils, "n_imp": n_imp, "n_sen": n_sen, "n_soft": n_soft, "n_story": n_story})
-                    results.append(data)
-            end_time = time.time()
-
-        results.sort(key=lambda x: int(x.get('score_final', 0)), reverse=True)
-        
-        # --- HEADER KPI DASHBOARD ---
-        st.markdown(f"<h3 style='color: #0F172A; margin-bottom: 1rem; padding-left: 1rem;'>Rapport d'Analyse (Généré en {round(end_time - start_time, 1)}s)</h3>", unsafe_allow_html=True)
-        
-        kpi1, kpi2, kpi3, kpi4 = st.columns(4)
-        with kpi1:
-            st.markdown(f"<div class='dash-card'><div style='color:#64748B; font-size:0.8rem; font-weight:700;'>VOLUMÉTRIE</div><div style='font-size:2rem; font-weight:800; color:#0F172A;'>{len(uploaded_files)}</div></div>", unsafe_allow_html=True)
-        with kpi2:
-            st.markdown(f"<div class='dash-card'><div style='color:#64748B; font-size:0.8rem; font-weight:700;'>MEILLEUR MATCH</div><div style='font-size:2rem; font-weight:800; color:#10B981;'>{results[0].get('score_final', 0)}%</div></div>", unsafe_allow_html=True)
-        with kpi3:
-            avg_score = int(sum([r.get('score_final', 0) for r in results]) / len(results)) if results else 0
-            st.markdown(f"<div class='dash-card'><div style='color:#64748B; font-size:0.8rem; font-weight:700;'>MOYENNE DU POOL</div><div style='font-size:2rem; font-weight:800; color:#3B82F6;'>{avg_score}%</div></div>", unsafe_allow_html=True)
-        with kpi4:
-            ecart = results[0].get('score_final', 0) - (results[1].get('score_final', 0) if len(results)>1 else 0)
-            st.markdown(f"<div class='dash-card'><div style='color:#64748B; font-size:0.8rem; font-weight:700;'>ÉCART N°1 vs N°2</div><div style='font-size:2rem; font-weight:800; color:#F59E0B;'>+{ecart} pts</div></div>", unsafe_allow_html=True)
-
-        st.markdown("<br>", unsafe_allow_html=True)
-
-        # --- SPOTLIGHT : LE MEILLEUR CANDIDAT ---
-        if len(results) > 0 and results[0].get('score_final', 0) > 0:
-            top_cand = results[0]
-            st.markdown("<h4 style='color: #0F172A; margin-bottom: 1rem; padding-left: 1rem;'>🏆 Recommandation Numéro 1</h4>", unsafe_allow_html=True)
+                    data = process_cv_scoring(text, job_description)
+                    final_score = min(int(data.get("n_hard_skills_coeur",0)), 65) + min(int(data.get("n_outils_metier",0)), 10) + min(int(data.get("n_business_impact",0)), 10) + min(int(data.get("n_seniorite",0)), 5) + min(int(data.get("n_soft_skills",0)), 5) + min(int(data.get("n_storytelling",0)), 5)
+                    data.update({"score_final": final_score})
+                    save_candidate(data, current_offer_id)
+                time.sleep(20)
             
-            with st.container():
-                st.markdown("<div class='spotlight-card' style='margin: 0 1rem;'>", unsafe_allow_html=True)
-                
-                spot_col1, spot_col2, spot_col3 = st.columns([1.5, 2, 1.5])
-                
-                with spot_col1:
-                    st.markdown(f"<div style='font-size:3.5rem; font-weight:900; color:#3B82F6; line-height:1;'>{top_cand.get('score_final', 0)}</div>", unsafe_allow_html=True)
-                    st.markdown(f"<h2 style='margin-top:10px; margin-bottom:0;'>{top_cand.get('nom', 'Anonyme')}</h2>", unsafe_allow_html=True)
-                    st.markdown(f"<p style='color:#64748B; font-weight:500;'>{top_cand.get('titre_profil', '')} • {top_cand.get('années_exp', 0)} ans</p>", unsafe_allow_html=True)
-                    
-                    comps = top_cand.get('compétences', [])
-                    if isinstance(comps, list):
-                        badges = "".join([f"<span class='badge-tech'>{c}</span>" for c in comps[:5]])
-                        st.markdown(f"<div style='margin-top:15px;'>{badges}</div>", unsafe_allow_html=True)
-                
-                with spot_col2:
-                    st.markdown("<div style='padding-top: 10px;'>", unsafe_allow_html=True)
-                    bars_html = make_progress_bar("Tech Cœur", top_cand.get('n_coeur',0), 65, "#3B82F6")
-                    bars_html += make_progress_bar("Outils", top_cand.get('n_outils',0), 10, "#8B5CF6")
-                    bars_html += make_progress_bar("Impact ROI", top_cand.get('n_imp',0), 10, "#10B981")
-                    st.markdown(bars_html, unsafe_allow_html=True)
-                    st.markdown("</div>", unsafe_allow_html=True)
-                
-                with spot_col3:
-                    # FIX: Ajout de la clé unique pour le graphique Spotlight
-                    st.plotly_chart(create_radar_chart(top_cand), use_container_width=True, config={'displayModeBar': False}, key="radar_top")
-                
-                st.markdown("<hr style='border-color: #E2E8F0; margin: 15px 0;'>", unsafe_allow_html=True)
-                st.markdown(f"**Synthèse IA :** {top_cand.get('reasoning', '')}")
-                st.markdown(f"<div style='color:#10B981; font-size:0.9rem; margin-top:5px;'><b>Force :</b> {top_cand.get('strength', '')}</div>", unsafe_allow_html=True)
-                st.markdown(f"<div style='color:#EF4444; font-size:0.9rem;'><b>Risque :</b> {top_cand.get('risk', '')}</div>", unsafe_allow_html=True)
-                
-                st.markdown("</div>", unsafe_allow_html=True) 
+            progress_bar.progress(100, text=t('succ_done'))
+            time.sleep(1)
+            st.session_state.current_page = 'pool'
+            st.rerun()
 
-        # --- RUNNER UPS ---
-        if len(results) > 1:
-            st.markdown("<br><h4 style='color: #0F172A; margin-bottom: 1rem; padding-left: 1rem;'>📋 Autres Profils Analysés</h4>", unsafe_allow_html=True)
+# --- PAGE 2 : VIVIER ---
+elif st.session_state.current_page == 'pool':
+    st.markdown(f"<h2 style='color: #0F172A; font-weight: 800; font-size: 2.2rem; letter-spacing: -0.5px; margin-bottom: 1.5rem;'>{t('pool_title')}</h2>", unsafe_allow_html=True)
+    
+    if offers_df.empty: st.info(t('pool_no_camp'))
+    else:
+        offer_map_vivier = dict(zip(offers_df['title'] + " (" + offers_df['created_at'].str.split().str[0] + ")", offers_df['id']))
+        selected_offer_vivier = st.selectbox(t('pool_show'), list(offer_map_vivier.keys()), key="vivier_select")
+        filter_offer_id = offer_map_vivier[selected_offer_vivier]
+        
+        df_history = get_candidates_by_offer(filter_offer_id)
+        job_description_vivier = offers_df[offers_df['id'] == filter_offer_id]['description'].iloc[0]
+        
+        selected_rows = [row for _, row in df_history.iterrows() if st.session_state.get(f"select_cand_{row['id']}", False)]
+        has_selection = len(selected_rows) > 0
+        
+        col_title, col_bulk_gen, col_bulk_del, col_export, col_del_offer = st.columns([1.5, 1.5, 1.5, 1.5, 1.5])
+        with col_title: 
+            st.markdown(f"<div style='font-size: 1.1rem; color: #475569; padding-top: 10px;'>{t('pool_total').format(len(df_history))}</div>", unsafe_allow_html=True)
             
-            # FIX: Ajout de enumerate pour générer un ID unique par graphique
-            for idx, res in enumerate(results[1:]):
-                score = res.get('score_final', 0)
-                color = "#10B981" if score >= 60 else ("#F59E0B" if score >= 40 else "#EF4444")
+        with col_bulk_gen:
+            if not df_history.empty:
+                if st.button(t('btn_gen'), type="primary", use_container_width=True, disabled=not has_selection):
+                    progress_bulk = st.progress(0, text=t('prog_init'))
+                    for i, row in enumerate(selected_rows):
+                        progress_bulk.progress(int((i / len(selected_rows)) * 100), text=t('prog_gen').format(row['nom']))
+                        try: cand_data = json.loads(row['analyse_json'])
+                        except: continue
+                        if "interview_questions" not in cand_data and row['score_final'] > 0:
+                            questions = generate_interview_questions(cand_data, job_description_vivier)
+                            if questions:
+                                cand_data["interview_questions"] = questions
+                                update_candidate_data(row['id'], cand_data) 
+                                time.sleep(2) 
+                    progress_bulk.progress(100, text=t('succ_gen'))
+                    time.sleep(1); st.rerun()
+
+        with col_bulk_del:
+            if not df_history.empty:
+                bulk_del_key = f"bulk_del_{filter_offer_id}"
+                if bulk_del_key not in st.session_state: st.session_state[bulk_del_key] = False
                 
-                st.markdown(f"""
-                <div class='dash-card' style='margin: 0 1rem 0px 1rem; display: flex; align-items: center; padding: 15px 20px; border-bottom: none; border-bottom-left-radius: 0; border-bottom-right-radius: 0;'>
-                    <div style='background: {color}; color: white; border-radius: 8px; font-weight: 800; font-size: 1.2rem; padding: 8px 12px; margin-right: 20px; min-width: 60px; text-align: center;'>
-                        {score}
-                    </div>
-                    <div style='flex-grow: 1;'>
-                        <div style='font-size: 1.1rem; font-weight: 700; color: #0F172A;'>{res.get('nom', 'Anonyme')} <span style='font-weight: 400; color: #64748B; font-size: 0.9rem;'>— {res.get('titre_profil', '')}</span></div>
-                        <div style='font-size: 0.85rem; color: #475569; margin-top: 4px;'><b>Tech:</b> {res.get('n_coeur',0)}/65 &nbsp;|&nbsp; <b>Outils:</b> {res.get('n_outils',0)}/10 &nbsp;|&nbsp; <b>Impact:</b> {res.get('n_imp',0)}/10</div>
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+                if not st.session_state[bulk_del_key]:
+                    if st.button(t('btn_del_sel'), type="secondary", use_container_width=True, disabled=not has_selection): st.session_state[bulk_del_key] = True; st.rerun()
+                else:
+                    cY, cN = st.columns(2)
+                    with cY:
+                        if st.button(t('yes'), type="primary", key="yes_bulk_del"):
+                            for row in selected_rows: delete_candidate(row['id'])
+                            st.session_state[bulk_del_key] = False; st.rerun()
+                    with cN:
+                        if st.button(t('no'), type="secondary", key="no_bulk_del"): st.session_state[bulk_del_key] = False; st.rerun()
+
+        with col_export:
+            if not df_history.empty:
+                clean_title = offers_df[offers_df['id'] == filter_offer_id]['title'].iloc[0].replace(" ", "_").replace("/", "-").replace("\\", "-")
+                if not has_selection:
+                    st.download_button(t('btn_export'), "", file_name=f"candidats_{clean_title}.csv", mime="text/csv", use_container_width=True, disabled=True)
+                else:
+                    selected_ids = [r['id'] for r in selected_rows]
+                    df_selected = df_history[df_history['id'].isin(selected_ids)]
+                    csv_data = prepare_export_df(df_selected, st.session_state.lang).to_csv(index=False, sep=';', encoding='utf-8-sig')
+                    st.download_button(t('btn_export'), csv_data, f"candidats_{clean_title}.csv", "text/csv", use_container_width=True)
                 
-                with st.container():
-                    st.markdown("<div style='padding: 0 1rem;'>", unsafe_allow_html=True)
-                    with st.expander("📊 Voir l'analyse détaillée et le graphique"):
-                        col_r1, col_r2 = st.columns([1, 1.5])
+        with col_del_offer:
+            offer_del_key = f"del_offer_{filter_offer_id}"
+            if offer_del_key not in st.session_state: st.session_state[offer_del_key] = False
+            if not st.session_state[offer_del_key]:
+                if st.button(t('btn_del_camp'), type="secondary", key=f"btn_{offer_del_key}", use_container_width=True): st.session_state[offer_del_key] = True; st.rerun()
+            else:
+                cY, cN = st.columns(2)
+                with cY:
+                    if st.button(t('yes'), type="primary", key="yes_bulk_del"): delete_job_offer(filter_offer_id); st.session_state[offer_del_key] = False; st.rerun()
+                with cN:
+                    if st.button(t('no'), type="secondary", key="no_bulk_del"): st.session_state[offer_del_key] = False; st.rerun()
+
+        st.markdown("<hr>", unsafe_allow_html=True)
+
+        if df_history.empty: st.info(t('pool_no_cand'))
+        else:
+            max_cands = len(df_history)
+            if "applied_top_n" not in st.session_state: st.session_state.applied_top_n = min(5, max_cands)
+            if st.session_state.applied_top_n > max_cands and max_cands > 0: st.session_state.applied_top_n = max_cands
+            
+            sort_map = {'desc': t('sort_desc'), 'asc': t('sort_asc'), 'az': t('sort_az')}
+            if "applied_sort_id" not in st.session_state: st.session_state.applied_sort_id = 'desc'
+
+            st.markdown(f"<div style='margin-bottom: 10px; font-weight: 600; font-size: 0.9rem; color: #64748B; text-transform: uppercase; letter-spacing: 0.5px;'>{t('filt_title')}</div>", unsafe_allow_html=True)
+            col_f1, col_f2 = st.columns(2)
+            with col_f1:
+                with st.form(key="form_top_n", border=False):
+                    new_top_n = st.number_input(t('filt_top'), 1, max_cands, st.session_state.applied_top_n, 1)
+                    if st.form_submit_button(t('btn_apply'), type="secondary"): st.session_state.applied_top_n = new_top_n; st.rerun()
+            with col_f2:
+                with st.form(key="form_sort", border=False):
+                    current_display = sort_map[st.session_state.applied_sort_id]
+                    new_sort_display = st.selectbox(t('filt_sort'), list(sort_map.values()), index=list(sort_map.values()).index(current_display))
+                    if st.form_submit_button(t('btn_apply'), type="secondary"): 
+                        st.session_state.applied_sort_id = {v: k for k, v in sort_map.items()}[new_sort_display]
+                        st.rerun()
+
+            df_top = df_history.nlargest(st.session_state.applied_top_n, 'score_final')
+            if st.session_state.applied_sort_id == 'desc': df_display = df_top.sort_values(by='score_final', ascending=False)
+            elif st.session_state.applied_sort_id == 'asc': df_display = df_top.sort_values(by='score_final', ascending=True)
+            else: df_display = df_top.sort_values(by='nom', ascending=True)
+
+            if df_display.empty: st.warning(t('warn_empty'))
+            else:
+                all_selected = all(st.session_state.get(f"select_cand_{row['id']}", False) for _, row in df_display.iterrows())
+                st.markdown("<br>", unsafe_allow_html=True)
+                master_val = st.checkbox(f"✅ {t('chk_all').format(len(df_display))}", value=all_selected)
+                st.markdown("<br>", unsafe_allow_html=True)
+                
+                if master_val != all_selected:
+                    for _, row in df_display.iterrows(): st.session_state[f"select_cand_{row['id']}"] = master_val
+                    st.rerun()
+                
+                for _, row in df_display.iterrows():
+                    score = row['score_final']
+                    emoji_score = "🟢" if score >= 60 else ("🟠" if score >= 40 else "🔴")
+                    
+                    try: cand_data = json.loads(row['analyse_json'])
+                    except: cand_data = {}
+                    
+                    col_chk, col_card = st.columns([0.5, 11.5])
+                    with col_chk:
+                        st.markdown("<div style='height: 18px;'></div>", unsafe_allow_html=True)
+                        st.checkbox(" ", key=f"select_cand_{row['id']}", label_visibility="collapsed")
                         
-                        with col_r1:
-                            # FIX: Ajout de la clé unique basée sur l'index de la boucle
-                            st.plotly_chart(create_radar_chart(res), use_container_width=True, config={'displayModeBar': False}, key=f"radar_runner_{idx}")
+                    with col_card:
+                        # ⚡ CORRECTION TITRE : Fini le HTML baveux, place au texte pur
+                        expander_label = f"{emoji_score} Score : {score}/100   |   {row['nom']} — {row['titre_profil']}"
                         
-                        with col_r2:
-                            st.markdown(f"**Synthèse :** {res.get('reasoning', '')}")
-                            st.markdown(f"**💪 Force :** <span style='color:#10B981;'>{res.get('strength', '-')}</span>", unsafe_allow_html=True)
-                            st.markdown(f"**⚠️ Risque :** <span style='color:#EF4444;'>{res.get('risk', '-')}</span>", unsafe_allow_html=True)
-                    st.markdown("</div>", unsafe_allow_html=True)
+                        with st.expander(expander_label):
+                            st.markdown(f"<div style='font-size: 0.85rem; color: #94A3B8; margin-bottom: 20px;'><b>{t('scanned_on')}</b> {row['date_scan']}</div>", unsafe_allow_html=True)
+                            
+                            col1, col2 = st.columns([2, 1])
+                            with col1:
+                                st.markdown(t('exp_proof').format(cand_data.get('preuve_ingenierie', 'Non précisé')))
+                                st.markdown(f"{t('exp_strength')} <span style='color:#10B981; font-weight:600;'>{cand_data.get('strength', '-')}</span>", unsafe_allow_html=True)
+                                st.markdown(f"{t('exp_risk')} <span style='color:#EF4444; font-weight:600;'>{cand_data.get('risk', '-')}</span>", unsafe_allow_html=True)
+                                st.markdown(f"{t('exp_conc')} {cand_data.get('reasoning', '')}")
+                            with col2:
+                                st.plotly_chart(create_radar_chart(cand_data), use_container_width=True, config={'displayModeBar': False}, key=f"hist_radar_{row['id']}")
+                            
+                            st.markdown("<hr style='border-color: #F1F5F9; margin: 20px 0;'>", unsafe_allow_html=True)
+                            
+                            q_data = cand_data.get("interview_questions")
+                            if not q_data and score > 0: st.markdown(f"<div style='padding:15px; color:#94A3B8; font-style:italic; background:#F8FAFC; border-radius:8px;'>{t('exp_no_q')}</div>", unsafe_allow_html=True)
+                            elif q_data:
+                                st.markdown("<div style='background-color:#F8FAFC; padding:20px; border-radius:12px; border:1px solid #E2E8F0;'>", unsafe_allow_html=True)
+                                st.markdown(f"<h4 style='margin-top:0; color:#0F172A;'>{t('exp_q_title').replace('#### ', '')}</h4>", unsafe_allow_html=True)
+                                for key in ["q1_force", "q2_risque", "q3_situation"]:
+                                    if key in q_data:
+                                        st.markdown(f"<p style='margin-bottom:5px; color:#334155;'><b>{q_data[key].get('titre', '')}</b></p>", unsafe_allow_html=True)
+                                        st.markdown(f"<p style='font-style:italic; color:#0F172A;'>« {q_data[key].get('question', '')} »</p>", unsafe_allow_html=True)
+                                        st.markdown(f"<p style='font-size:0.9rem; color:#64748B; margin-bottom: 15px;'>{t('exp_expect')} {q_data[key].get('attente', '')}</p>", unsafe_allow_html=True)
+                                st.markdown("</div>", unsafe_allow_html=True)
+                            
+                            st.markdown("<br>", unsafe_allow_html=True)
+                            cand_del_key = f"del_cand_{row['id']}"
+                            if cand_del_key not in st.session_state: st.session_state[cand_del_key] = False
+                            if not st.session_state[cand_del_key]:
+                                if st.button(t('btn_del_cand'), type="secondary", key=f"btn_{cand_del_key}"): st.session_state[cand_del_key] = True; st.rerun()
+                            else:
+                                cY, cN = st.columns([1, 1])
+                                with cY:
+                                    if st.button(t('yes'), type="primary", key=f"yes_{cand_del_key}"): delete_candidate(row['id']); st.session_state[cand_del_key] = False; st.rerun()
+                                with cN:
+                                    if st.button(t('no'), type="secondary", key=f"no_{cand_del_key}"): st.session_state[cand_del_key] = False; st.rerun()

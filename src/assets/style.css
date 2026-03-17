@@ -1,0 +1,135 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+/* RESET GLOBAL ET FOND */
+html, body, [class*="css"] { font-family: 'Inter', sans-serif !important; }
+.stApp { background-color: #FAFAFA !important; }
+#MainMenu, footer, header { display: none !important; }
+
+/* ESPACEMENT ET CONTENEUR PRINCIPAL */
+.block-container { padding-top: 3rem !important; padding-bottom: 3rem !important; max-width: 1200px !important; }
+
+/* 🧿 SIDEBAR */
+[data-testid="stSidebar"] { 
+    background-color: #0A0E17 !important; 
+    border-right: none !important; 
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1) !important;
+}
+[data-testid="stSidebar"] p, [data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] span, [data-testid="stSidebar"] label { 
+    color: #F1F5F9 !important; font-weight: 500 !important; letter-spacing: 0.2px !important;
+}
+
+/* CHAMPS DE SAISIE */
+.stTextInput>div>div>input, .stTextArea>div>div>textarea, .stSelectbox>div>div>div {
+    background-color: #FFFFFF !important; color: #0F172A !important; border: 1px solid #E2E8F0 !important;
+    border-radius: 8px !important; padding: 0.5rem 0.75rem !important; box-shadow: 0 1px 2px rgba(0,0,0,0.02) !important;
+    font-size: 0.9rem !important; transition: all 0.2s ease !important;
+}
+.stTextInput>div>div>input:focus, .stTextArea>div>div>textarea:focus, .stSelectbox>div>div>div:focus {
+    border-color: #3B82F6 !important; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+}
+
+[data-testid="stSidebar"] .stTextInput>div>div>input, [data-testid="stSidebar"] .stTextArea>div>div>textarea, [data-testid="stSidebar"] .stSelectbox>div>div>div {
+    background-color: #1E293B !important; color: #FFFFFF !important; border: 1px solid #334155 !important;
+}
+[data-testid="stSidebar"] .stTextInput>div>div>input:focus, [data-testid="stSidebar"] .stTextArea>div>div>textarea:focus {
+    border-color: #60A5FA !important; box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.2) !important;
+}
+
+/* ⚡ CORRECTION DU TEXTE INDICATIF (PLACEHOLDER) DANS LA SIDEBAR */
+[data-testid="stSidebar"] input::placeholder, 
+[data-testid="stSidebar"] textarea::placeholder { 
+    color: #94A3B8 !important; 
+    opacity: 0.8 !important; 
+}
+
+/* ZONE D'UPLOAD PDF */
+[data-testid="stFileUploadDropzone"] { 
+    background-color: rgba(255,255,255,0.05) !important; border: 1px dashed #475569 !important; border-radius: 12px !important; transition: all 0.2s;
+}
+[data-testid="stFileUploadDropzone"]:hover { border-color: #3B82F6 !important; background-color: rgba(59,130,246,0.05) !important; }
+
+/* BOUTONS D'ACTION PRINCIPAUX (Primary) - RETOUR À LA NORMALE */
+button[kind="primary"], [data-testid="stDownloadButton"] button, [data-testid="stFileUploader"] button { 
+    background-color: #0F172A !important; color: #FFFFFF !important; font-weight: 600 !important; font-size: 0.8rem !important;
+    border-radius: 8px !important; border: none !important; padding: 0.5rem 0.5rem !important; letter-spacing: 0.3px; 
+    transition: all 0.2s ease !important; min-height: 40px !important; display: flex !important;
+    align-items: center !important; justify-content: center !important; text-align: center !important; width: 100% !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06) !important;
+}
+button[kind="primary"]:hover:not(:disabled), [data-testid="stDownloadButton"] button:hover:not(:disabled) { 
+    transform: translateY(-2px) !important; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05) !important; background-color: #1E293B !important;
+}
+button[kind="primary"]:disabled, [data-testid="stDownloadButton"] button:disabled {
+    background-color: #CBD5E1 !important; color: #94A3B8 !important; box-shadow: none !important; cursor: not-allowed !important; transform: none !important;
+}
+
+/* BOUTONS D'ACTION SECONDAIRES (Ghost buttons) - RETOUR À LA NORMALE */
+button[kind="secondary"] {
+    background: transparent !important; color: #475569 !important; font-weight: 600 !important; font-size: 0.8rem !important; 
+    border-radius: 8px !important; border: 1px solid #CBD5E1 !important; padding: 0.5rem 0.5rem !important; letter-spacing: 0.3px; 
+    transition: all 0.2s ease !important; min-height: 40px !important; display: flex !important;
+    align-items: center !important; justify-content: center !important; text-align: center !important; width: 100% !important; box-shadow: none !important;
+}
+button[kind="secondary"]:hover:not(:disabled) { 
+    color: #0F172A !important; background-color: #F8FAFC !important; border-color: #94A3B8 !important;
+}
+
+/* ⚡ LE SNIPER : ON RÉDUIT LA TAILLE ET LA POLICE UNIQUEMENT POUR LES BOUTONS OUI/NON */
+div[data-testid="column"] div[data-testid="column"] button {
+    min-height: 32px !important;
+    padding: 0.2rem !important; /* Marge interne minuscule pour gagner de la place */
+}
+div[data-testid="column"] div[data-testid="column"] button p {
+    font-size: 0.75rem !important; /* Police plus petite */
+    white-space: nowrap !important; /* Interdiction formelle de passer à la ligne */
+    margin: 0 !important;
+}
+
+/* ⚡ LE BLOC CANDIDAT (ACCORDÉON ULTRACLEAN) */
+[data-testid="stExpander"] {
+    background: #FFFFFF !important; border-radius: 12px !important; border: 1px solid #F1F5F9 !important;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -1px rgba(0, 0, 0, 0.02) !important;
+    margin-bottom: 12px !important; transition: all 0.2s ease !important;
+}
+[data-testid="stExpander"]:hover {
+    border-color: #E2E8F0 !important; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03) !important;
+}
+[data-testid="stExpander"] summary { padding: 16px 20px !important; }
+[data-testid="stExpander"] summary:hover { background-color: transparent !important; }
+[data-testid="stExpander"] summary p { font-size: 1.05rem !important; font-weight: 600 !important; color: #1E293B !important; }
+
+/* PETITS BOUTONS (Filtres) */
+[data-testid="stFormSubmitButton"] button {
+    background-color: #F8FAFC !important; color: #475569 !important; border: 1px solid #E2E8F0 !important;
+    border-radius: 6px !important; padding: 0.2rem 0.8rem !important; font-size: 0.75rem !important; min-height: 32px !important; width: auto !important; box-shadow: none !important;
+}
+[data-testid="stFormSubmitButton"] button:hover { background-color: #F1F5F9 !important; border-color: #CBD5E1 !important; color: #0F172A !important;}
+
+/* ⚡ DRAPEAUX (Ciblage absolu via le type Tertiary) */
+button[kind="tertiary"] {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+}
+button[kind="tertiary"]:hover {
+    transform: scale(1.15) !important;
+    background: transparent !important;
+}
+button[kind="tertiary"] p, 
+button[kind="tertiary"] span, 
+button[kind="tertiary"] div {
+    font-size: 2.8rem !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    line-height: 1 !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+}
+
+/* SEPARATEURS STREAMLIT */
+hr { margin-top: 1rem !important; margin-bottom: 2rem !important; border-color: #E2E8F0 !important; }
