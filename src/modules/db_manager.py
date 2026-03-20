@@ -2,6 +2,7 @@ import sqlite3
 import pandas as pd
 import hashlib
 import json
+import streamlit as st
 
 DB_PATH = "talent_db.sqlite"
 
@@ -84,6 +85,7 @@ def create_job_offer(title, description, user_id):
     conn.close()
     return offer_id
 
+@st.cache_data(ttl=300)
 def get_all_job_offers(user_id):
     conn = sqlite3.connect(DB_PATH)
     df = pd.read_sql_query('SELECT * FROM job_offers WHERE user_id = ? ORDER BY created_at DESC', conn, params=(user_id,))
@@ -105,7 +107,9 @@ def save_candidate(candidate_data, offer_id):
     ))
     conn.commit()
     conn.close()
+    st.cache_data.clear()
 
+@st.cache_data(ttl=300)
 def get_candidates_by_offer(offer_id):
     conn = sqlite3.connect(DB_PATH)
     df = pd.read_sql_query('SELECT * FROM candidates WHERE offer_id = ? ORDER BY score_final DESC', conn, params=(offer_id,))
@@ -118,6 +122,7 @@ def delete_candidate(candidate_id):
     c.execute('DELETE FROM candidates WHERE id = ?', (candidate_id,))
     conn.commit()
     conn.close()
+    st.cache_data.clear()
 
 def delete_job_offer(offer_id):
     conn = sqlite3.connect(DB_PATH)
@@ -133,3 +138,4 @@ def update_candidate_data(candidate_id, new_data):
     c.execute('UPDATE candidates SET analyse_json = ? WHERE id = ?', (json.dumps(new_data), candidate_id))
     conn.commit()
     conn.close()
+    st.cache_data.clear()

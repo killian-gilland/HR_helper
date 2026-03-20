@@ -1,6 +1,8 @@
 # Fichier : src/modules/ui_components.py
 import plotly.graph_objects as go
+import streamlit as st
 
+@st.cache_data
 def create_radar_chart(res):
     """Génère le graphique radar des compétences."""
     categories = ['Cœur Tech', 'Outils', 'Impact', 'Séniorité', 'Soft Skills', 'Clarté/Récit']
